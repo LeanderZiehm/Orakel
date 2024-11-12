@@ -1,0 +1,15 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "text": "Alice"
+      },
+      {
+        "id": 2,
+        "text": "Bob"
+      }
+    ],
+    "edges": [[1,2]]
+  }
+}
