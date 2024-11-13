@@ -35,11 +35,16 @@
         .node.active {
               background-color: rgb(0, 255, 247);
         }
-        .line {
+
+
+            .line {
             position: absolute;
-            stroke: black;
-            stroke-width: 2;
+            height: 2px;
+            background-color: black;  /* background: linear-gradient(to right, black, transparent); */
+            transform-origin: 0 50%; /* Rotate from the left center */
+            z-index: -1;
         }
+        
         #inputDisplay {
             position: fixed;
             bottom: 20px;
@@ -74,7 +79,6 @@
 </head>
 <body>
     <div id="inputDisplay"></span></div>
-    <svg id="lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;"></svg>
     <script>
         let inputText = '';
         let activeNodes = [];
@@ -114,7 +118,7 @@
           
             if (activeNodes.length > 0) {
                 activeNodes.forEach(activeNode => {
-                    createLink(activeNode, node);
+                    createLine(activeNode, node);
                 });
             }
             
@@ -182,12 +186,13 @@
                     
                 })
                 .catch(error => {
-                    callback('Error: Unable to get a response from the bot.', null);
+                    console.error('Error:', error);
+                    // callback('Error: Unable to get a response from the bot.', null);
                 });
         }
         
         function setActiveNode(node) {   
-            
+
             if(isHoldingCtrlOrShift === false){
                 activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
                 activeNodes = [];
@@ -197,30 +202,41 @@
             node.classList.add('active');
         }
 
-        function createLink(node1, node2) {
-             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("class", "line");
-            updateLine(line, node1, node2);
-            document.getElementById('lines').appendChild(line);
-            
-            node1.lines = node1.lines || [];
-            node2.lines = node2.lines || [];
-            node1.lines.push({line, target: node2});
-            node2.lines.push({line, target: node1});
-        }
-        
-        function updateLine(line, node1, node2) {
-            const node1Pos = node1.getBoundingClientRect();
-            const node2Pos = node2.getBoundingClientRect();
-            const x1 = node1Pos.left + node1Pos.width / 2;
-            const y1 = node1Pos.top + node1Pos.height / 2;
-            const x2 = node2Pos.left + node2Pos.width / 2;
-            const y2 = node2Pos.top + node2Pos.height / 2;
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-        }
+        function createLine(node1, node2) {
+                const line = document.createElement('div');
+                console.log('line', line);
+                line.classList.add('line');
+                document.body.appendChild(line);
+                updateLine(line, node1, node2);
+
+                // Attach line to nodes for future reference if needed
+                node1.lines = node1.lines || [];
+                node2.lines = node2.lines || [];
+                node1.lines.push({ line, target: node2 });
+                node2.lines.push({ line, target: node1 });
+            }
+
+            function updateLine(line, node1, node2) {
+                const node1Pos = node1.getBoundingClientRect();
+                const node2Pos = node2.getBoundingClientRect();
+
+                const x1 = node1Pos.left + node1Pos.width / 2;
+                const y1 = node1Pos.top + node1Pos.height / 2;
+                const x2 = node2Pos.left + node2Pos.width / 2;
+                const y2 = node2Pos.top + node2Pos.height / 2;
+
+                // Calculate distance and angle between the two nodes
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                // Set line's position, length, and rotation
+                line.style.width = `${distance}px`;
+                line.style.left = `${x1}px`;
+                line.style.top = `${y1}px`;
+                line.style.transform = `rotate(${angle}deg)`;
+            }
         
         function startDrag(event, node) {
             isDragging = true;
@@ -323,7 +339,8 @@
         let isDraggingBackground = false;
         let offsetXBackground = 0, offsetYBackground = 0;
         document.addEventListener('mousedown', function(event) {
-            if (event.target.id === 'lines') {
+
+            if (event.target === document.body) {
 
                 activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
                 activeNodes = [];
@@ -342,7 +359,7 @@
 
             mouseX = event.clientX;
             mouseY = event.clientY;
-            console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}`);
+            // console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}`);
 
 
             if (isDraggingBackground) {
