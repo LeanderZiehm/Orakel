@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import ollama
 
+
+# modelName = 'tinyllama'
+modelName = 'llama3.1'
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -19,7 +23,8 @@ Only list items that directly answer the question\nUser:{user_message}"""
 
 
     print(f"User:{user_message}")
-    response = ollama.chat(model='llama3.1', messages=[
+
+    response = ollama.chat(model=modelName, messages=[
     {
         'role': 'user',
         'content': prompt

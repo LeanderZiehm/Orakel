@@ -186,9 +186,14 @@
                 });
         }
         
-        function setActiveNode(node) {            
-            activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
-            activeNodes = [node]; 
+        function setActiveNode(node) {   
+            
+            if(isHoldingCtrlOrShift === false){
+                activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
+                activeNodes = [];
+            }
+            activeNodes.push(node);
+          
             node.classList.add('active');
         }
 
@@ -268,6 +273,8 @@
             document.getElementById('inputDisplay').innerHTML = text + '<span class="cursor"></span>';
 
         }
+
+        let isHoldingCtrlOrShift = false;
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Enter' && inputText.trim() !== '') {
 
@@ -283,6 +290,10 @@
                 createNode(inputText, newX, newY);
                 inputText = ''; 
             }
+            // if is ctrl or shift or alt
+            else if (event.key === 'Control' || event.key === 'Shift') {
+              isHoldingCtrlOrShift = true;
+            }
         
             else if (event.key.length === 1) { 
                 inputText += event.key;
@@ -294,6 +305,13 @@
             setInputDisplayText(inputText);
            
         });
+        document.addEventListener('keyup', function(event) {
+            if (event.key === 'Control' || event.key === 'Shift') {
+              isHoldingCtrlOrShift = false;
+            }
+        });
+
+
 
 
         let clickedBackgroundPosition = {x: 0, y: 0};
