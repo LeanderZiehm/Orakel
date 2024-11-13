@@ -17,6 +17,7 @@ Your answer should be a Python list in this format: ["item1", "item2", "item3"]
 Do not add any extra words or explanations outside the array.
 Only list items that directly answer the question\nUser:{user_message}"""
 
+
     print(f"User:{user_message}")
     response = ollama.chat(model='llama3.1', messages=[
     {
