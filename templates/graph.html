@@ -186,6 +186,10 @@
       let lastCreatedNode;
       let mouseX = 0;
       let mouseY = 0;
+      let clickedBackgroundPosition = { x: 0, y: 0 };
+      let isDraggingBackground = false;
+      let offsetXBackground = 0;
+      let offsetYBackground = 0;
 
       function main() {}
 
@@ -275,7 +279,7 @@
         });
 
         node.addEventListener("pointerdown", (e) => {
-          if (isHoldingCtrlOrShift) {
+          if (isHoldingCtrl || isHoldingShift) {
             return;
           }
           startDrag(e, node);
@@ -355,7 +359,7 @@
 
       function makeParent(parentNode, childNode) {
         const line = document.createElement("div");
-        console.log("line", line);
+        // console.log("line", line);
         line.classList.add("line");
         document.body.appendChild(line);
         updateLine(line, parentNode, childNode);
@@ -407,7 +411,7 @@
       }
 
       function onDrag(event) {
-        if (isHoldingCtrlOrShift) {
+        if (isHoldingCtrl||isHoldingShift) {
           return;
         }
         if (isDragging && draggedNode) {
@@ -465,14 +469,8 @@
 
       function getNodePosition(node) {
         const boundingBox = node.getBoundingClientRect();
-
-        // Calculate the center position
         const x = boundingBox.left + boundingBox.width / 2;
         const y = boundingBox.top + boundingBox.height / 2;
-
-        console.log("getNodePosition", x, y);
-
-        // Return both values as an object
         return { x, y };
       }
 
@@ -528,7 +526,6 @@
           });
           activeNodes = [];
         } else {
-          console.log(event.key);
         }
       });
       document.addEventListener("keyup", function (event) {
@@ -541,15 +538,11 @@
         }
       });
 
-      let clickedBackgroundPosition = { x: 0, y: 0 };
 
-      let isDraggingBackground = false;
-      let offsetXBackground = 0,
-        offsetYBackground = 0;
 
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
-          if (isHoldingCtrl === false && isHoldingShift) {
+          if (isHoldingCtrl === false && isHoldingShift == false) {
             activeNodes.forEach((activeNode) =>
               activeNode.classList.remove("active")
             );
