@@ -140,8 +140,13 @@
     </div>
 
     <script>
+
+    const NODE_OFFSET_Y = 150;
+
       let nodes = [];
-      let edges = {};
+    //   let edges = {};
+
+
 
       let activeNodes = [];
 
@@ -151,6 +156,7 @@
 
       let startDragPosX = 0;
       let startDragPosY = 0;
+      let lastCreatedNode;
 
       function main() {}
 
@@ -206,12 +212,23 @@
       };
 
       function createNode(text, x, y, generatedByLLM = false) {
+        // const node = document.createElement("div");
+        // node.classList.add("node");
+        // node.textContent = text;
+        // node.style.left = x + "px";
+        // node.style.top = y + "px";
+        // document.body.appendChild(node);
         const node = document.createElement("div");
         node.classList.add("node");
         node.textContent = text;
-        node.style.left = x + "px";
-        node.style.top = y + "px";
         document.body.appendChild(node);
+
+        const boundingBox = node.getBoundingClientRect();
+        const nodeX = x - boundingBox.width / 2;
+        const nodeY = y - boundingBox.height / 2;
+
+        node.style.left = nodeX + "px";
+        node.style.top = nodeY + "px";
 
         node.addEventListener("dblclick", () => {
           if (node.classList.contains("memorized")) {
@@ -242,6 +259,7 @@
           });
         }
         nodes.push(node);
+        lastCreatedNode = node;
 
         if (generatedByLLM === false) {
           sendToLLM(node);
@@ -250,8 +268,8 @@
       }
 
       function sendToLLM(node) {
-        const x = parseInt(node.style.left);
-        const y = parseInt(node.style.top);
+  
+        const nodePosition = getNodePosition(node)
 
         let promptForLLM = "[";
 
@@ -279,8 +297,28 @@
             const resonesNodeTexts = data["response"];
 
             for (let i = 0; i < resonesNodeTexts.length; i++) {
-              createNode(resonesNodeTexts[i], x + i * 200 - 200, y + 100, true);
+              createNode(resonesNodeTexts[i], nodePosition.x  + i * 200 - 200, nodePosition.y + NODE_OFFSET_Y / 2, true);
             }
+
+            // const centerOffset = 200; // distance from center for each additional response
+            // const numResponses = resonesNodeTexts.length;
+
+            // for (let i = 0; i < numResponses; i++) {
+            //   let xOffset;
+
+            //   if (numResponses === 1) {
+            //     // Center if only one response
+            //     xOffset = 0;
+            //   } else if (numResponses % 2 === 1) {
+            //     // For odd numbers, center the middle response
+            //     xOffset = (i - Math.floor(numResponses / 2)) * centerOffset;
+            //   } else {
+            //     // For even numbers, center around the middle, split evenly
+            //     xOffset = (i - (numResponses / 2 - 0.5)) * centerOffset;
+            //   }
+
+            //   createNode(resonesNodeTexts[i], nodePosition.x + xOffset, nodePosition.y + NODE_OFFSET_Y/2, true);
+            // }
           })
           .catch((error) => {
             console.error("Error:", error);
@@ -405,28 +443,50 @@
         document.removeEventListener("mousemove", onDrag);
         document.removeEventListener("mouseup", stopDrag);
       }
-      
+
       let isHoldingCtrlOrShift = false;
       let isHoldingAlt = false;
+
+
+    function getNodePosition(node) {
+        const boundingBox = node.getBoundingClientRect();
+
+        // Calculate the center position
+        const x = boundingBox.left + boundingBox.width/2;
+        const y = boundingBox.top + boundingBox.height/2;
+
+        console.log("getNodePosition",x,y);
+
+        // Return both values as an object
+        return { x, y };
+    }
+
       document.addEventListener("keydown", function (event) {
-          const promptTxtBox = document.querySelector("#promptTxt");
-          promptTxtBox.focus();
+        const promptTxtBox = document.querySelector("#promptTxt");
+        promptTxtBox.focus();
 
         if (event.key === "Enter") {
-         
           const inputText = promptTxtBox.value;
 
-          if (inputText.trim() !== "") {
-            promptTxtBox.value = "";
-            let newX = mouseX;
-            let newY = mouseY;
-            if (activeNodes[0]) {
-              const activeNode = activeNodes[0];
-              newX = parseInt(activeNode.style.left);
-              newY = parseInt(activeNode.style.top) + 150;
-            }
-            createNode(inputText, newX, newY);
+          if (inputText.trim() == "") {
+            return;
           }
+
+          promptTxtBox.value = "";
+
+
+          let pos = {x:0,y:0};
+
+          if (activeNodes[0]) {
+            pos = getNodePosition(activeNodes[0]);
+          } else if (lastCreatedNode) {
+              pos = getNodePosition(lastCreatedNode);
+          } else {
+            pos.x =  window.innerWidth / 2;
+          }
+          pos.y += NODE_OFFSET_Y;
+
+          createNode(inputText, pos.x, pos.y);
         } else if (event.key === "Control" || event.key === "Shift") {
           isHoldingCtrlOrShift = true;
         } else if (event.key === "Alt") {
@@ -451,15 +511,9 @@
             node.remove();
           });
           activeNodes = [];
-        } 
-    
-        else if (event.key.length === 1) {
-            promptTxtBox
-        }
-        else {
+        } else {
           console.log(event.key);
         }
-    
       });
       document.addEventListener("keyup", function (event) {
         if (event.key === "Control" || event.key === "Shift") {
