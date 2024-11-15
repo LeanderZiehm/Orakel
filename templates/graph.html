@@ -31,8 +31,8 @@
         padding: 10px 20px;
 
         /* clip excess text */
-        max-width: 350px;
-        max-height: 350px;
+        max-width: 450px;
+        max-height: 450px;
         display: -webkit-box;
         overflow-x: hidden;
         overflow-y: auto;
@@ -43,6 +43,8 @@
         scrollbar-width: thin;
         scrollbar-color: white transparent;
         scroll-behavior: smooth;
+
+        resize: both;
       }
 
       .node.active {
@@ -272,7 +274,12 @@
           sendToLLM(node);
         });
 
-        node.addEventListener("pointerdown", (e) => startDrag(e, node));
+        node.addEventListener("pointerdown", (e) => {
+          if (isHoldingCtrlOrShift) {
+            return;
+          }
+          startDrag(e, node);
+        });
 
         if (activeNodes.length > 0) {
           activeNodes.forEach((activeNode) => {
@@ -400,6 +407,9 @@
       }
 
       function onDrag(event) {
+        if (isHoldingCtrlOrShift) {
+          return;
+        }
         if (isDragging && draggedNode) {
           let offsetX = event.clientX - startDragPosX;
           let offsetY = event.clientY - startDragPosY;
