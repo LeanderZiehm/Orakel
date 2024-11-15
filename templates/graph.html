@@ -38,6 +38,12 @@
         overflow-y: auto;
         text-overflow: ellipsis;
         white-space: normal;
+
+        /* scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: white transparent;
+
+        scroll-behavior: smooth;
       }
 
       .node.active {
@@ -154,8 +160,6 @@
     </div>
 
     <script>
-      const NODE_OFFSET_Y = 150;
-
       /*upload txt section */
       const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
       uploadTxtBtn.addEventListener("click", function () {
@@ -172,6 +176,8 @@
         }
       });
       /* end upload txt section */
+
+      const NODE_OFFSET_Y = 150;
 
       let nodes = [];
       //   let edges = {};
