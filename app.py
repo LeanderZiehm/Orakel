@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import ollama
 
@@ -41,7 +42,15 @@ Only list items that directly answer the question\nUser:{user_message}"""
     return jsonify({'response':items})
 
 if __name__ == '__main__':
-    # app.run(debug=True,host='0.0.0.0')#
-    app.run(debug=True,port=5002)#
+    # populate exec env
+    env = ""
+    if os.path.isfile(".env"):
+        f = open(".env")
+        env = f.read()
+        f.close()
+    env = {k:v for k,v in (tuple(t.split("=")) for t in [l for l in env.split()])}
+
+    PORT = int(env['PORT']) if 'PORT' in env else 5002
+    app.run(debug=True,port=PORT)
 
 
