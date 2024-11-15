@@ -149,8 +149,8 @@
       let isDragging = false;
       let draggedNode = null;
 
-      let startDragPosX = 0,
-        startDragPosY = 0;
+      let startDragPosX = 0;
+      let startDragPosY = 0;
 
       function main() {}
 
@@ -405,18 +405,15 @@
         document.removeEventListener("mousemove", onDrag);
         document.removeEventListener("mouseup", stopDrag);
       }
-      function setInputDisplayText(text) {
-        text = text.replace(/ /g, "&nbsp;");
-
-        document.getElementById("inputDisplay").innerHTML =
-          text + '<span class="cursor"></span>';
-      }
-
+      
       let isHoldingCtrlOrShift = false;
       let isHoldingAlt = false;
       document.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
           const promptTxtBox = document.querySelector("#promptTxt");
+          promptTxtBox.focus();
+
+        if (event.key === "Enter") {
+         
           const inputText = promptTxtBox.value;
 
           if (inputText.trim() !== "") {
@@ -454,12 +451,15 @@
             node.remove();
           });
           activeNodes = [];
-        } else if (event.key === "Backspace") {
-          inputText = inputText.slice(0, -1);
-        } else {
+        } 
+    
+        else if (event.key.length === 1) {
+            promptTxtBox
+        }
+        else {
           console.log(event.key);
         }
-        setInputDisplayText(inputText);
+    
       });
       document.addEventListener("keyup", function (event) {
         if (event.key === "Control" || event.key === "Shift") {
@@ -519,7 +519,6 @@
         isDraggingBackground = false;
       });
 
-      setInputDisplayText("");
       main();
     </script>
   </body>
