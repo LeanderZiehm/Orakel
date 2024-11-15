@@ -42,8 +42,10 @@ Only list items that directly answer the question"""
     chatbot_message = chatbot_message.replace('"', "").replace("[", "").replace("]", "")
     items = chatbot_message.split(",")
     print(f"Items:{items}")
+
     # return jsonify({'response':[chatbot_message]})
     return jsonify({"response": items})
+
 
 
 if __name__ == "__main__":

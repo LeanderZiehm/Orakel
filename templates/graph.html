@@ -38,6 +38,9 @@
         .node.active {
             background-color: rgb(0, 255, 247);
         }
+        .node.memorized {
+            background-color: rgb(0, 38, 255);
+        }
 
 
         .line {
@@ -106,6 +109,17 @@
             spellcheck="true">
     </div>
 
+    <div id="container">
+        <div id="contextState" style="position: fixed; top: 10px; left: 10px; background-color: white; padding: 0px 10px 10px 10px; border: 1px solid black; border-radius: 5px;min-width: 200px;">
+            <h3>Context state</h3>
+            <div id="nodeList">
+            <ul id="nodeListContainer" style="list-style-type: none; padding: 0;">
+                <!-- Nodes will be dynamically added here -->
+            </ul>
+            </div>
+            <button onclick="clearNodes()">Clear</button>
+        </div>
+
     <script>
 
         let nodes = [];
@@ -114,29 +128,95 @@
         // let inputText = '';
         let activeNodes = [];
  
+        let memory = [];
         let isDragging = false;
         let draggedNode = null;
         // let offsetX = 0, offsetY = 0;
         let startDragPosX = 0, startDragPosY = 0;
 
-        function main() {
+        function main(){}
             // createNode('Generate me 5 interesting names.', 400, 200);
+        function updateNodeList() {
+                    const nodeListContainer = document.getElementById('nodeListContainer');
+                    nodeListContainer.innerHTML = ''; // Clear the list
+
+                    memory.forEach((node, index) => {
+                        const listItem = document.createElement('li');
+                        listItem.style.display = 'flex';
+                        listItem.style.justifyContent = 'space-between';
+                        listItem.style.alignItems = 'center';
+                        listItem.style.backgroundColor = 'black';
+                        listItem.style.color = 'white';
+                        listItem.style.padding = '5px 10px';
+                        listItem.style.marginBottom = '5px';
+                        listItem.style.borderRadius = '5px';
+
+                        const nodeText = document.createElement('span');
+                        nodeText.textContent = node.textContent;
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.innerHTML = '&#10006;'; // Cross icon
+                        deleteButton.style.background = 'none';
+                        deleteButton.style.border = 'none';
+                        deleteButton.style.color = 'white';
+                        deleteButton.style.cursor = 'pointer';
+                        deleteButton.addEventListener('click', () => removeNodeFromMemory(node));
+
+                        listItem.appendChild(nodeText);
+                        listItem.appendChild(deleteButton);
+                        nodeListContainer.appendChild(listItem);
+                    });
+                }
+
+        function clearNodes() {
+            memory.forEach(node => setMemorizedNode(node));
+            memory = [];
+            updateNodeList();
         }
 
-        function createNode(text, x, y, generatedByLLM = false) {
+        function removeNodeFromMemory(node) {
+            memory = memory.filter(memoryNode => memoryNode !== node);
+            setMemorizedNode(node);
+            updateNodeList();
+        }
+            // Call updateNodeList whenever nodes are added or removed
+        memory.push = function() {
+            Array.prototype.push.apply(this, arguments);
+            updateNodeList();
+        };
+        
+        
+        function createNode(text, x, y,generatedByLLM=false) {
+
+
+
             const node = document.createElement('div');
             node.classList.add('node');
             node.textContent = text;
             node.style.left = x + 'px';
             node.style.top = y + 'px';
             document.body.appendChild(node);
-
-            node.addEventListener('click', () => setActiveNode(node));
-            node.addEventListener('contextmenu', (event) => {
-                event.preventDefault();  // Prevent the default right-click menu from appearing
-                sendToLLM(node)
+            
+            node.addEventListener('dblclick', () => {
+                if (node.classList.contains('memorized')) {
+                    node.classList.remove('memorized');
+                    activeNodes = activeNodes.filter(activeNode => activeNode !== node);
+                    memory = memory.filter(memoryNode => memoryNode !== node);
+                   
+                } else {
+                    setMemorizedNode(node);
+                    if (!memory.includes(node)) {
+                        memory.push(node);
+                    }
+                }
+                updateNodeList();
             });
 
+            node.addEventListener('contextmenu', (event) => {
+                event.preventDefault();  // Prevent the default right-click menu from appearing
+                sendToLLM(node);
+            });
+            
             node.addEventListener('mousedown', (e) => startDrag(e, node));
 
             if (activeNodes.length > 0) {
@@ -148,9 +228,10 @@
 
             if (generatedByLLM === false) {
                 sendToLLM(node);
-                setActiveNode(node);
+                setActiveNode(node);  
             }
         }
+
 
         function sendToLLM(node) {
             const x = parseInt(node.style.left);
@@ -196,7 +277,11 @@
                     // callback('Error: Unable to get a response from the bot.', null);
                 });
         }
-
+        
+        function setMemorizedNode(node){
+            node.classList.toggle('memorized');
+        }
+ 
         function setActiveNode(node) {
 
             if (isHoldingCtrlOrShift === false) {
@@ -467,10 +552,6 @@
         document.addEventListener('mouseup', function (event) {
             isDraggingBackground = false;
         });
-
-
-
-
 
         setInputDisplayText('');
         main();
