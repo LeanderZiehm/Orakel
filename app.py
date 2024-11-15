@@ -2,10 +2,18 @@ import os
 from flask import Flask, render_template, request, jsonify
 import ollama
 
+# populate exec env
+env = ""
+if os.path.isfile(".env"):
+    f = open(".env")
+    env = f.read()
+    f.close()
+env = {k: v for k, v in (tuple(t.split("=")) for t in [l for l in env.split()])}
+
 
 # modelName = 'tinyllama'
 # modelName = 'llama3.1'
-modelName = None
+modelName = env['MODEL'] if 'MODEL' in env else 'llama3.1'
 
 app = Flask(__name__)
 
@@ -29,7 +37,7 @@ Only list items that directly answer the question"""
 
     print(f"User:{user_message}")
 
-    if modelName == None:
+    if modelName == 'None':
         return jsonify({"response": [user_message]})
 
     response = ollama.chat(model=modelName, messages=[{"role": "user", "content": promptContent}])
@@ -49,13 +57,6 @@ Only list items that directly answer the question"""
 
 
 if __name__ == "__main__":
-    # populate exec env
-    env = ""
-    if os.path.isfile(".env"):
-        f = open(".env")
-        env = f.read()
-        f.close()
-    env = {k: v for k, v in (tuple(t.split("=")) for t in [l for l in env.split()])}
-
     PORT = int(env["PORT"]) if "PORT" in env else 5002
-    app.run(debug=True, port=PORT)
+    HOST = env['HOST'] if 'HOST' in env else '127.0.0.1'
+    app.run(debug=True, port=PORT, host=HOST)
