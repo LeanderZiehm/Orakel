@@ -11,6 +11,15 @@ file in the same directory level as `app.py`. The file should [stricly] follow t
 KEY=VALUE
 ```
 
+example:
+
+```text
+PORT=5014
+DEBUG=1
+HOST=0.0.0.0
+MODEL=None
+```
+
 > at this commit the env parsing doesn't allow variables inside the values
 
 ### Running
@@ -22,8 +31,8 @@ run in development with `python3 app.py`
 ### Stack
 
 - frontend: vanillajs, Yes! we raw-dogged it :P
-- backend: flask and huggungface library
+- backend: flask and ollama library
 
 ---
 
-Built in Bayern.
+Built in Bayerwald Hackathon.
