@@ -50,24 +50,6 @@
             z-index: -1;
         }
 
-        #inputDisplay {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 18px;
-
-            min-width: 200px;
-            min-height: 20px;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
 
         .cursor {
             width: 1px;
@@ -89,21 +71,41 @@
             }
         }
 
-        #promptTxt {
+        #inputs {
             z-index: 100;
             position: absolute;
             bottom: 10px;
+            width: 90%;
+        }
+
+        #promptTxt {
             padding: 10px 10px;
             font-size: 16px;
             background-color: #343434;
             color: #F7FFF7;
-            width: 90%;
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        #fileUpload {
+            display: block;
+            padding: 10px 5px;
+            background-color: #343434;
+            color: #f0f0f0;
+            margin: 0 0 10px 0;
+            border-radius: 5px;
         }
     </style>
 </head>
 
 <body>
-    <input placeholder="> type your prompt here" type="text" name="prompt" id="promptTxt" autofocus spellcheck="true">
+    <div id="inputs">
+        <input type="file" name="customFile" id="fileUpload" accept=".txt,.text">
+        <button>Process File</button>
+        <input placeholder="> type your prompt here" type="text" name="prompt" id="promptTxt" autofocus
+            spellcheck="true">
+    </div>
+
     <script>
         let activeNodes = [];
         let nodes = [];
