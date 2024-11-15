@@ -177,6 +177,12 @@
       });
       /* end upload txt section */
 
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
+      /* end upload txt section */
+
       const NODE_OFFSET_Y = 150;
 
       let nodes = [];
@@ -285,7 +291,7 @@
           sendToLLM(node);
         });
 
-        node.addEventListener("mousedown", (e) => startDrag(e, node));
+        node.addEventListener("pointerdown", (e) => startDrag(e, node));
 
         if (activeNodes.length > 0) {
           activeNodes.forEach((activeNode) => {
@@ -428,8 +434,8 @@
 
         node.style.cursor = "grabbing";
         setActiveNode(node);
-        document.addEventListener("mousemove", onDrag);
-        document.addEventListener("mouseup", stopDrag);
+          document.addEventListener("pointermove", onDrag);
+          document.addEventListener("pointerup", stopDrag);
       }
 
       function onDrag(event) {
@@ -478,8 +484,8 @@
           draggedNode.style.cursor = "pointer";
         }
         draggedNode = null;
-        document.removeEventListener("mousemove", onDrag);
-        document.removeEventListener("mouseup", stopDrag);
+          document.removeEventListener("pointermove", onDrag);
+          document.removeEventListener("pointerup", stopDrag);
       }
 
       let isHoldingCtrlOrShift = false;
@@ -565,7 +571,7 @@
       let offsetXBackground = 0,
         offsetYBackground = 0;
 
-      document.addEventListener("mousedown", function (event) {
+      document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
           if (isHoldingCtrlOrShift === false) {
             activeNodes.forEach((activeNode) =>
@@ -584,7 +590,7 @@
       let mouseX = 0;
       let mouseY = 0;
 
-      document.addEventListener("mousemove", function (event) {
+      document.addEventListener("pointermove", function (event) {
         mouseX = event.clientX;
         mouseY = event.clientY;
 
@@ -605,7 +611,7 @@
           clickedBackgroundPosition.y = event.clientY;
         }
       });
-      document.addEventListener("mouseup", function (event) {
+      document.addEventListener("pointerup", function (event) {
         isDraggingBackground = false;
       });
 
