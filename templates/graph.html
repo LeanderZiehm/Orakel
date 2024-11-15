@@ -25,13 +25,19 @@
         color: white;
         font-size: large;
         font-weight: bold;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         border-radius: 10px;
         cursor: pointer;
         border: 2px solid transparent;
         padding: 10px 20px;
+
+        /* clip excess text */
+        max-width: 350px;
+        max-height: 350px;
+        display: -webkit-box;
+        overflow-x: hidden;
+        overflow-y: auto;
+        text-overflow: ellipsis;
+        white-space: normal;
       }
 
       .node.active {
@@ -74,6 +80,7 @@
         position: absolute;
         bottom: 10px;
         width: 90%;
+        display: flex;
       }
 
       #promptTxt {
@@ -81,30 +88,30 @@
         font-size: 16px;
         background-color: #343434;
         color: #f7fff7;
-        width: 100%;
+        width: 80%;
+        flex: none;
         border-radius: 5px;
       }
 
-      #fileUpload {
+      #fileToUpload {
         display: block;
-        padding: 10px 5px;
+        padding: 10px 10px;
+        margin: 0px 5px;
         background-color: #343434;
         color: #f0f0f0;
-        margin: 0 0 10px 0;
         border-radius: 5px;
+      }
+
+      #uploadTxtBtn {
+        border-radius: 5px;
+        background-color: #343434;
+        color: #f0f0f0;
       }
     </style>
   </head>
 
   <body>
     <div id="inputs">
-      <input
-        type="file"
-        name="customFile"
-        id="fileUpload"
-        accept=".txt,.text"
-      />
-      <button>Process File</button>
       <input
         placeholder="> type your prompt here"
         type="text"
@@ -113,6 +120,13 @@
         autofocus
         spellcheck="true"
       />
+      <input
+        type="file"
+        name="customFile"
+        id="fileToUpload"
+        accept=".txt,.text"
+      />
+      <button id="uploadTxtBtn">Upload</button>
     </div>
 
     <div id="container">
@@ -140,13 +154,27 @@
     </div>
 
     <script>
+      const NODE_OFFSET_Y = 150;
 
-    const NODE_OFFSET_Y = 150;
+      /*upload txt section */
+      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
+      uploadTxtBtn.addEventListener("click", function () {
+        const [fileToUpload] = document.querySelector("#fileToUpload").files;
+
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          const fileContent = reader.result;
+          createNode(fileContent, mouseX, mouseY);
+        });
+
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
+      /* end upload txt section */
 
       let nodes = [];
-    //   let edges = {};
-
-
+      //   let edges = {};
 
       let activeNodes = [];
 
@@ -268,8 +296,7 @@
       }
 
       function sendToLLM(node) {
-  
-        const nodePosition = getNodePosition(node)
+        const nodePosition = getNodePosition(node);
 
         let promptForLLM = "[";
 
@@ -297,7 +324,12 @@
             const resonesNodeTexts = data["response"];
 
             for (let i = 0; i < resonesNodeTexts.length; i++) {
-              createNode(resonesNodeTexts[i], nodePosition.x  + i * 200 - 200, nodePosition.y + NODE_OFFSET_Y / 2, true);
+              createNode(
+                resonesNodeTexts[i],
+                nodePosition.x + i * 200 - 200,
+                nodePosition.y + NODE_OFFSET_Y / 2,
+                true
+              );
             }
 
             // const centerOffset = 200; // distance from center for each additional response
@@ -447,19 +479,18 @@
       let isHoldingCtrlOrShift = false;
       let isHoldingAlt = false;
 
-
-    function getNodePosition(node) {
+      function getNodePosition(node) {
         const boundingBox = node.getBoundingClientRect();
 
         // Calculate the center position
-        const x = boundingBox.left + boundingBox.width/2;
-        const y = boundingBox.top + boundingBox.height/2;
+        const x = boundingBox.left + boundingBox.width / 2;
+        const y = boundingBox.top + boundingBox.height / 2;
 
-        console.log("getNodePosition",x,y);
+        console.log("getNodePosition", x, y);
 
         // Return both values as an object
         return { x, y };
-    }
+      }
 
       document.addEventListener("keydown", function (event) {
         const promptTxtBox = document.querySelector("#promptTxt");
@@ -474,15 +505,14 @@
 
           promptTxtBox.value = "";
 
-
-          let pos = {x:0,y:0};
+          let pos = { x: 0, y: 0 };
 
           if (activeNodes[0]) {
             pos = getNodePosition(activeNodes[0]);
           } else if (lastCreatedNode) {
-              pos = getNodePosition(lastCreatedNode);
+            pos = getNodePosition(lastCreatedNode);
           } else {
-            pos.x =  window.innerWidth / 2;
+            pos.x = window.innerWidth / 2;
           }
           pos.y += NODE_OFFSET_Y;
 
