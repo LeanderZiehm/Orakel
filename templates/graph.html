@@ -92,7 +92,7 @@
 </head>
 
 <body>
-    <div id="inputDisplay"></span></div>
+    <div id="inputDisplay"></div>
     <script>
         let inputText = '';
         let activeNodes = [];
@@ -258,6 +258,7 @@
                 });
             }
         }
+
         function stopDrag() {
             isDragging = false;
             if (draggedNode) {
@@ -267,21 +268,19 @@
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
         }
+
         function setInputDisplayText(text) {
             //change space to &nbsp;
             text = text.replace(/ /g, '&nbsp;');
 
             // white - space: pre;
             document.getElementById('inputDisplay').innerHTML = text + '<span class="cursor"></span>';
-
         }
 
         let isHoldingCtrlOrShift = false;
+
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && inputText.trim() !== '') {
-
-
-
                 let newX = mouseX;
                 let newY = mouseY;
                 if (activeNodes[0]) {
@@ -296,7 +295,6 @@
             else if (event.key === 'Control' || event.key === 'Shift') {
                 isHoldingCtrlOrShift = true;
             }
-
             else if (event.key.length === 1) {
                 inputText += event.key;
             } else if (event.key === 'Backspace') {
@@ -307,27 +305,19 @@
             setInputDisplayText(inputText);
 
         });
+
         document.addEventListener('keyup', function (event) {
             if (event.key === 'Control' || event.key === 'Shift') {
                 isHoldingCtrlOrShift = false;
             }
         });
 
-
-
-
         let clickedBackgroundPosition = { x: 0, y: 0 };
-
-        //if click on background then remove active node 
-
-
-        //dragging background to move all nodes
         let isDraggingBackground = false;
         let offsetXBackground = 0, offsetYBackground = 0;
+
         document.addEventListener('mousedown', function (event) {
-
             if (event.target === document.body) {
-
                 activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
                 activeNodes = [];
 
@@ -342,7 +332,6 @@
         let mouseY = 0;
 
         document.addEventListener('mousemove', function (event) {
-
             mouseX = event.clientX;
             mouseY = event.clientY;
             // console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}`);
@@ -365,6 +354,7 @@
                 clickedBackgroundPosition.y = event.clientY;
             }
         });
+
         document.addEventListener('mouseup', function (event) {
             isDraggingBackground = false;
         });
