@@ -35,4 +35,4 @@ run in development with `python3 app.py`
 
 ---
 
-Built in Bayerwald Hackathon.
+Built in B4Y3RW4LD Hackathon.
