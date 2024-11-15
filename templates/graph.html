@@ -152,29 +152,16 @@
       >
         <h3>Context state</h3>
         <div id="nodeList">
-          <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
-          </ul>
+          <ul
+            id="nodeListContainer"
+            style="list-style-type: none; padding: 0"
+          ></ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
       </div>
     </div>
 
     <script>
-      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
-      uploadTxtBtn.addEventListener("click", function () {
-        const [fileToUpload] = document.querySelector("#fileToUpload").files;
-
-        const reader = new FileReader();
-        reader.addEventListener("load", function () {
-          const fileContent = reader.result;
-          createNode(fileContent, mouseX, mouseY);
-        });
-
-        if (fileToUpload) {
-          reader.readAsText(fileToUpload);
-        }
-      });
-
       const NODE_OFFSET_Y = 150;
       let nodes = [];
       let activeNodes = [];
@@ -192,6 +179,21 @@
       let offsetYBackground = 0;
 
       function main() {}
+
+      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
+      uploadTxtBtn.addEventListener("click", function () {
+        const [fileToUpload] = document.querySelector("#fileToUpload").files;
+
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          const fileContent = reader.result;
+          createNode(fileContent, mouseX, mouseY);
+        });
+
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
 
       function updateNodeList() {
         const nodeListContainer = document.getElementById("nodeListContainer");
@@ -411,7 +413,7 @@
       }
 
       function onDrag(event) {
-        if (isHoldingCtrl||isHoldingShift) {
+        if (isHoldingCtrl || isHoldingShift) {
           return;
         }
         if (isDragging && draggedNode) {
@@ -537,8 +539,6 @@
           isHoldingAlt = false;
         }
       });
-
-
 
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
