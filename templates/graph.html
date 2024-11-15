@@ -25,13 +25,26 @@
         color: white;
         font-size: large;
         font-weight: bold;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         border-radius: 10px;
         cursor: pointer;
         border: 2px solid transparent;
         padding: 10px 20px;
+
+        /* clip excess text */
+        max-width: 450px;
+        max-height: 450px;
+        display: -webkit-box;
+        overflow-x: hidden;
+        overflow-y: auto;
+        text-overflow: ellipsis;
+        white-space: normal;
+
+        /* scrolling styles */
+        scrollbar-width: thin;
+        scrollbar-color: white transparent;
+        scroll-behavior: smooth;
+
+        resize: both;
       }
 
       .node.active {
@@ -83,6 +96,7 @@
         position: absolute;
         bottom: 10px;
         width: 90%;
+        display: flex;
       }
 
       #promptTxt {
@@ -90,30 +104,30 @@
         font-size: 16px;
         background-color: #343434;
         color: #f7fff7;
-        width: 100%;
+        width: 80%;
+        flex: none;
         border-radius: 5px;
       }
 
-      #fileUpload {
+      #fileToUpload {
         display: block;
-        padding: 10px 5px;
+        padding: 10px 10px;
+        margin: 0px 5px;
         background-color: #343434;
         color: #f0f0f0;
-        margin: 0 0 10px 0;
         border-radius: 5px;
+      }
+
+      #uploadTxtBtn {
+        border-radius: 5px;
+        background-color: #343434;
+        color: #f0f0f0;
       }
     </style>
   </head>
 
   <body>
     <div id="inputs">
-      <input
-        type="file"
-        name="customFile"
-        id="fileUpload"
-        accept=".txt,.text"
-      />
-      <button>Process File</button>
       <input
         placeholder="> type your prompt here"
         type="text"
@@ -122,6 +136,13 @@
         autofocus
         spellcheck="true"
       />
+      <input
+        type="file"
+        name="customFile"
+        id="fileToUpload"
+        accept=".txt,.text"
+      />
+      <button id="uploadTxtBtn">Upload</button>
     </div>
 
     <div id="container">
@@ -142,7 +163,6 @@
         <h3>Context state</h3>
         <div id="nodeList">
           <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
-            <!-- Nodes will be dynamically added here -->
           </ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
@@ -150,6 +170,22 @@
     </div>
 
     <script>
+      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
+      uploadTxtBtn.addEventListener("click", function () {
+        const [fileToUpload] = document.querySelector("#fileToUpload").files;
+
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          const fileContent = reader.result;
+          createNode(fileContent, mouseX, mouseY);
+        });
+
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
+
+      const NODE_OFFSET_Y = 150;
       let nodes = [];   // The nodes that are currently on the screen
       let edges = {};
       let activeNode = null; // The node that is currently selected
@@ -157,9 +193,15 @@
       let memory = [];  // The nodes + type that are in the context state
       let isDragging = false;
       let draggedNode = null;
-
-      let startDragPosX = 0,
-        startDragPosY = 0;
+      let startDragPosX = 0;
+      let startDragPosY = 0;
+      let lastCreatedNode;
+      let mouseX = 0;
+      let mouseY = 0;
+      let clickedBackgroundPosition = { x: 0, y: 0 };
+      let isDraggingBackground = false;
+      let offsetXBackground = 0;
+      let offsetYBackground = 0;
 
       function main() {}
 
@@ -218,9 +260,14 @@
         const node = document.createElement("div");
         node.classList.add("node");
         node.textContent = text;
-        node.style.left = x + "px";
-        node.style.top = y + "px";
         document.body.appendChild(node);
+
+        const boundingBox = node.getBoundingClientRect();
+        const nodeX = x - boundingBox.width / 2;
+        const nodeY = y - boundingBox.height / 2;
+
+        node.style.left = nodeX + "px";
+        node.style.top = nodeY + "px";
 
         node.addEventListener("dblclick", () => {
           if (node.classList.contains("memorized")) {
@@ -239,7 +286,12 @@
           }
         });
 
-        node.addEventListener("mousedown", (e) => startDrag(e, node));
+        node.addEventListener("pointerdown", (e) => {
+          if (isHoldingCtrl || isHoldingShift) {
+            return;
+          }
+          startDrag(e, node);
+        });
 
         if (memory.length > 0) {
           memory.forEach((_node) => {
@@ -250,6 +302,8 @@
           makeParent(activeNode, node, false);
         }
         nodes.push(node);
+        lastCreatedNode = node;
+
         if (generatedByLLM === false) {
           setActiveNode(node);
         }
@@ -266,6 +320,7 @@
             y = 0;
             nodeText = "";
         }
+        const nodePosition = getNodePosition(node);
 
         let promptForLLM = "[";
 
@@ -293,7 +348,12 @@
             const resonesNodeTexts = data["response"];
 
             for (let i = 0; i < resonesNodeTexts.length; i++) {
-              createNode(resonesNodeTexts[i], x + i * 200 - 200, y + 100, true);
+              createNode(
+                resonesNodeTexts[i],
+                nodePosition.x + i * 200 - 200,
+                nodePosition.y + NODE_OFFSET_Y / 2,
+                true
+              );
             }
           })
           .catch((error) => {
@@ -318,6 +378,13 @@
         nodes.forEach((_node) => {
             _node.classList.remove("active");
         });
+        // if (isHoldingCtrl === false && isHoldingShift === false) {
+        //   activeNodes.forEach((activeNode) =>
+        //     activeNode.classList.remove("active")
+        //   );
+        //   activeNodes = [];
+        // }
+        // activeNodes.push(node);
 
         node.classList.add("active");
       }
@@ -369,11 +436,15 @@
         startDragPosY = event.clientY;
 
         node.style.cursor = "grabbing";
-        document.addEventListener("mousemove", onDrag);
-        document.addEventListener("mouseup", stopDrag);
+        // setActiveNode(node);
+        document.addEventListener("pointermove", onDrag);
+        document.addEventListener("pointerup", stopDrag);
       }
 
       function onDrag(event) {
+        if (isHoldingCtrl||isHoldingShift) {
+          return;
+        }
         if (isDragging && draggedNode) {
           let offsetX = event.clientX - startDragPosX;
           let offsetY = event.clientY - startDragPosY;
@@ -419,31 +490,51 @@
           draggedNode.style.cursor = "pointer";
         }
         draggedNode = null;
-        document.removeEventListener("mousemove", onDrag);
-        document.removeEventListener("mouseup", stopDrag);
+        document.removeEventListener("pointermove", onDrag);
+        document.removeEventListener("pointerup", stopDrag);
       }
 
-      let isHoldingCtrlOrShift = false;
+      let isHoldingCtrl = false;
+      let isHoldingShift = false;
       let isHoldingAlt = false;
+
+      function getNodePosition(node) {
+        const boundingBox = node.getBoundingClientRect();
+        const x = boundingBox.left + boundingBox.width / 2;
+        const y = boundingBox.top + boundingBox.height / 2;
+        return { x, y };
+      }
+
       document.addEventListener("keydown", function (event) {
         const promptTxtBox = document.querySelector("#promptTxt");
-        const inputText = promptTxtBox.value;
+        promptTxtBox.focus();
+
         if (event.key === "Enter") {
-          if (inputText.trim() !== "") {
-            promptTxtBox.value = "";
-            let newX = mouseX;
-            let newY = mouseY;
-            if (memory[0]) {
-              const activeNode = memory[0];
-              newX = parseInt(activeNode.style.left);
-              newY = parseInt(activeNode.style.top) - 150;
-            }
-            createNode(inputText, newX, newY);
-            //TODO: if activenode is not empty, then send to LLM else warn user
-            sendToLLM(activeNode);
+          const inputText = promptTxtBox.value;
+
+          if (inputText.trim() == "") {
+            return;
           }
-        } else if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = true;
+
+          promptTxtBox.value = "";
+
+          let pos = { x: 0, y: 0 };
+
+          if (memory[0]) {
+            pos = getNodePosition(memory[0]);
+          } else if (lastCreatedNode) {
+            pos = getNodePosition(lastCreatedNode);
+          } else {
+            pos.x = window.innerWidth / 2;
+          }
+          pos.y += NODE_OFFSET_Y;
+
+          createNode(inputText, pos.x, pos.y);
+          sendToLLM(activeNode);
+        } else if (event.key === "Control") {
+          isHoldingCtrl = true;
+        } else if (event.key === "Shift") {
+          isHoldingShift = true;
         } else if (event.key === "Alt") {
           isHoldingAlt = true;
         } else if (event.key === "Delete") {
@@ -466,29 +557,24 @@
             node.remove();
           });
           nodes = [];
-        } else if (event.key === "Backspace") {
-          inputText = inputText.slice(0, -1);
         } else {
-        //   console.log(event.key);
         }
       });
       document.addEventListener("keyup", function (event) {
-        if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = false;
+        if (event.key === "Control") {
+          isHoldingCtrl = false;
+        } else if (event.key === "Shift") {
+          isHoldingShift = false;
         } else if (event.key === "Alt") {
           isHoldingAlt = false;
         }
       });
 
-      let clickedBackgroundPosition = { x: 0, y: 0 };
 
-      let isDraggingBackground = false;
-      let offsetXBackground = 0,
-        offsetYBackground = 0;
 
-      document.addEventListener("mousedown", function (event) {
+      document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
-          if (isHoldingCtrlOrShift === false) {
+          if (isHoldingCtrl === false && isHoldingShift === false) {
     
             nodes.forEach((_node) =>
               _node.classList.remove("active")
@@ -502,10 +588,7 @@
         }
       });
 
-      let mouseX = 0;
-      let mouseY = 0;
-
-      document.addEventListener("mousemove", function (event) {
+      document.addEventListener("pointermove", function (event) {
         mouseX = event.clientX;
         mouseY = event.clientY;
         if (isDraggingBackground) {
@@ -525,7 +608,7 @@
           clickedBackgroundPosition.y = event.clientY;
         }
       });
-      document.addEventListener("mouseup", function (event) {
+      document.addEventListener("pointerup", function (event) {
         isDraggingBackground = false;
       });
 
