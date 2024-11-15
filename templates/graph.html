@@ -168,25 +168,11 @@
           ></ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
+        <button onclick="dumpState()">Dump State</button>
       </div>
     </div>
 
     <script>
-      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
-      uploadTxtBtn.addEventListener("click", function () {
-        const [fileToUpload] = document.querySelector("#fileToUpload").files;
-
-        const reader = new FileReader();
-        reader.addEventListener("load", function () {
-          const fileContent = reader.result;
-          createNode(fileContent, mouseX, mouseY);
-        });
-
-        if (fileToUpload) {
-          reader.readAsText(fileToUpload);
-        }
-      });
-
       const NODE_OFFSET_Y = 150;
       let nodes = [];   // The nodes that are currently on the screen
       let edges = {};
@@ -207,8 +193,117 @@
       let isHoldingCtrl = false;
       let isHoldingShift = false;
       let isHoldingAlt = false;
+      let uid = 2003;
+
+      /*
+      state machine 
+      Node := {
+        id: integer, // unique identifier
+        payload: string, // content in the node
+        top: integer, // top value in style
+        left: integer, // left value in style
+      };
+      
+      State := {
+        nodes: Array<Node>,
+        edges: Arraz<{
+          self: Node, // node in ctx
+          parents: Array<Node>, // parents
+        }>
+      };
+
+      Note: Instead of storing children, I store the parents
+      as it is easier to get all the parents using `activeNodes`
+      */
+      let state = {
+        nodes: [],
+        edges: [],
+      };
+
+      function createNode(text, x, y, generatedByLLM = false) {
+        const node = document.createElement("div");
+        node.classList.add("node");
+        node.textContent = text;
+        document.body.appendChild(node);
+
+        const boundingBox = node.getBoundingClientRect();
+        const nodeX = x - boundingBox.width / 2;
+        const nodeY = y - boundingBox.height / 2;
+
+        node.style.left = nodeX + "px";
+        node.style.top = nodeY + "px";
+
+        node.addEventListener("dblclick", () => {
+          if (node.classList.contains("memorized")) {
+            node.classList.remove("memorized");
+            memory = memory.filter((memoryNode) => memoryNode !== node);
+          } else {
+            setMemorizedNode(node);
+            memory.push(node);
+          }
+          updateNodeList();
+        });
+
+        node.addEventListener("click", () => {
+          if (isDragging === false) {
+            setActiveNode(node);
+          }
+        });
+
+        node.addEventListener("pointerdown", (e) => {
+          if (isHoldingCtrl || isHoldingShift) {
+            return;
+          }
+          startDrag(e, node);
+        });
+
+        if (memory.length > 0) {
+          memory.forEach((_node) => {
+            makeParent(_node, node, true);
+          });
+        }
+        if(activeNode) {
+          makeParent(activeNode, node, false);
+        }
+        nodes.push(node);
+        lastCreatedNode = node;
+
+        /* 
+          update the state at this point so that the
+          nodes created by the LLM is aware of this node as well
+
+          control-flow:
+          1. create instance of this Node
+          2. add it to state
+          3. compute all the edges
+          4. add edges to the state
+        */
+
+        if (generatedByLLM === false) {
+          setActiveNode(node);
+        }
+      }
 
       function main() {}
+
+      function dumpState() {
+        console.log(state);
+      }
+
+      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
+      uploadTxtBtn.addEventListener("click", function () {
+        const [fileToUpload] = document.querySelector("#fileToUpload").files;
+
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          const fileContent = reader.result;
+          createNode(fileContent, mouseX, mouseY);
+        });
+
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
 
       function updateNodeList() {
         const nodeListContainer = document.getElementById("nodeListContainer");
@@ -260,59 +355,6 @@
         Array.prototype.push.apply(this, arguments);
         updateNodeList();
       };
-
-      function createNode(text, x, y, generatedByLLM = false) {
-        const node = document.createElement("div");
-        node.classList.add("node");
-        node.textContent = text;
-        document.body.appendChild(node);
-
-        const boundingBox = node.getBoundingClientRect();
-        const nodeX = x - boundingBox.width / 2;
-        const nodeY = y - boundingBox.height / 2;
-
-        node.style.left = nodeX + "px";
-        node.style.top = nodeY + "px";
-
-        node.addEventListener("dblclick", () => {
-          if (node.classList.contains("memorized")) {
-            node.classList.remove("memorized");
-            memory = memory.filter((memoryNode) => memoryNode !== node);
-          } else {
-            setMemorizedNode(node);
-            memory.push(node);
-          }
-          updateNodeList();
-        });
-
-        node.addEventListener("click", () => {
-          if (isDragging === false) {
-            setActiveNode(node);
-          }
-        });
-
-        node.addEventListener("pointerdown", (e) => {
-          if (isHoldingCtrl || isHoldingShift) {
-            return;
-          }
-          startDrag(e, node);
-        });
-
-        if (memory.length > 0) {
-          memory.forEach((_node) => {
-            makeParent(_node, node, true);
-          });
-        }
-        if(activeNode) {
-          makeParent(activeNode, node, false);
-        }
-        nodes.push(node);
-        lastCreatedNode = node;
-
-        if (generatedByLLM === false) {
-          setActiveNode(node);
-        }
-      }
 
       function sendToLLM(node) {
         let x = 0, y = 0, nodeText = "";
@@ -561,6 +603,7 @@
           });
           nodes = [];
         } else {
+          return;
         }
       });
       document.addEventListener("keyup", function (event) {
