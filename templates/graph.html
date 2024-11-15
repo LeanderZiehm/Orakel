@@ -111,7 +111,7 @@
         let nodes = [];
         let edges = {};
 
-        let inputText = '';
+        // let inputText = '';
         let activeNodes = [];
  
         let isDragging = false;
@@ -338,16 +338,24 @@
 
         let isHoldingCtrlOrShift = false;
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter' && inputText.trim() !== '') {
-                let newX = mouseX;
-                let newY = mouseY;
-                if (activeNodes[0]) {
-                    const activeNode = activeNodes[0];
-                    newX = parseInt(activeNode.style.left);
-                    newY = parseInt(activeNode.style.top)+ 150;
+            if (event.key === 'Enter') {
+
+                const promptTxtBox = document.querySelector("#promptTxt");
+                const inputText = promptTxtBox.value;
+
+                if(inputText.trim() !== ''){
+                    promptTxtBox.value = '';
+                    let newX = mouseX;
+                    let newY = mouseY;
+                    if (activeNodes[0]) {
+                        const activeNode = activeNodes[0];
+                        newX = parseInt(activeNode.style.left);
+                        newY = parseInt(activeNode.style.top) + 150;
+                    }
+                    createNode(inputText, newX, newY);
                 }
-                createNode(inputText, newX, newY);
-                inputText = '';
+             
+            
             }
             // if is ctrl or shift or alt
             else if (event.key === 'Control' || event.key === 'Shift') {
@@ -382,9 +390,10 @@
                 ///////////////////// //
 
             }
-            else if (event.key.length === 1) {
-                inputText += event.key;
-            } else if (event.key === 'Backspace') {
+            // else if (event.key.length === 1) {
+                // inputText += event.key;
+            // }
+             else if (event.key === 'Backspace') {
                 inputText = inputText.slice(0, -1);
             } else {
                 console.log(event.key);
