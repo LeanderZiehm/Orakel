@@ -35,7 +35,7 @@
       }
 
       .node.active {
-        background-color: rgb(0, 255, 247);
+        background-color: rgb(0, 255, 247) !important;
       }
 
       .node.memorized {
@@ -49,6 +49,15 @@
         transform-origin: 0 50%;
         z-index: -1;
       }
+
+      .line-memory {
+        position: absolute;
+        height: 2px;
+        background-color: rgba(0, 38, 255, 0.37);
+        transform-origin: 0 50%;
+        z-index: -1;
+      }
+
 
       .cursor {
         width: 1px;
@@ -127,6 +136,7 @@
           border: 1px solid black;
           border-radius: 5px;
           min-width: 200px;
+          z-index: 100;	
         "
       >
         <h3>Context state</h3>
@@ -140,12 +150,11 @@
     </div>
 
     <script>
-      let nodes = [];
+      let nodes = [];   // The nodes that are currently on the screen
       let edges = {};
+      let activeNode = null; // The node that is currently selected
 
-      let activeNodes = [];
-
-      let memory = [];
+      let memory = [];  // The nodes + type that are in the context state
       let isDragging = false;
       let draggedNode = null;
 
@@ -216,56 +225,61 @@
         node.addEventListener("dblclick", () => {
           if (node.classList.contains("memorized")) {
             node.classList.remove("memorized");
-            activeNodes = activeNodes.filter(
-              (activeNode) => activeNode !== node
-            );
             memory = memory.filter((memoryNode) => memoryNode !== node);
           } else {
             setMemorizedNode(node);
-            if (!memory.includes(node)) {
-              memory.push(node);
-            }
+            memory.push(node);
           }
           updateNodeList();
         });
 
-        node.addEventListener("contextmenu", (event) => {
-          event.preventDefault();
-          sendToLLM(node);
+        node.addEventListener("click", () => {
+          if (isDragging === false) {
+            setActiveNode(node);
+          }
         });
 
         node.addEventListener("mousedown", (e) => startDrag(e, node));
 
-        if (activeNodes.length > 0) {
-          activeNodes.forEach((activeNode) => {
-            makeParent(activeNode, node);
+        if (memory.length > 0) {
+          memory.forEach((_node) => {
+            makeParent(_node, node, true);
           });
         }
+        if(activeNode) {
+          makeParent(activeNode, node, false);
+        }
         nodes.push(node);
-
         if (generatedByLLM === false) {
-          sendToLLM(node);
           setActiveNode(node);
         }
       }
 
       function sendToLLM(node) {
-        const x = parseInt(node.style.left);
-        const y = parseInt(node.style.top);
+        let x = 0, y = 0, nodeText = "";
+        if (node) {         
+            x = parseInt(node.style.left);
+            y = parseInt(node.style.top);
+            nodeText = node.textContent;
+        } else {
+            x = 0;
+            y = 0;
+            nodeText = "";
+        }
 
         let promptForLLM = "[";
 
-        for (let i = 0; i < activeNodes.length; i++) {
-          promptForLLM += `${activeNodes[i].textContent}`;
+        for (let i = 0; i < memory.length; i++) {
+          promptForLLM += `${nodeText}`;
 
-          if (i < activeNodes.length - 1) {
+          if (i < memory.length - 1) {
             promptForLLM += ",";
           }
-          if (i === activeNodes.length - 1) {
+          if (i === memory.length - 1) {
             promptForLLM += ` connected to `;
           }
         }
-        promptForLLM += `${node.textContent}]`;
+        promptForLLM += `${nodeText}]`;
 
         fetch("/chat", {
           method: "POST",
@@ -289,24 +303,28 @@
 
       function setMemorizedNode(node) {
         node.classList.toggle("memorized");
+        node.classList.remove("active");
+      }
+
+      function unsetActiveNode(node) {
+        if (node){
+            node.classList.remove("active");
+        }
       }
 
       function setActiveNode(node) {
-        if (isHoldingCtrlOrShift === false) {
-          activeNodes.forEach((activeNode) =>
-            activeNode.classList.remove("active")
-          );
-          activeNodes = [];
-        }
-        activeNodes.push(node);
+        activeNode = node;
+
+        nodes.forEach((_node) => {
+            _node.classList.remove("active");
+        });
 
         node.classList.add("active");
       }
 
-      function makeParent(parentNode, childNode) {
+      function makeParent(parentNode, childNode, isMemoryNode = false) {
         const line = document.createElement("div");
-        console.log("line", line);
-        line.classList.add("line");
+        line.classList.add(isMemoryNode?"line-memory" : "line");
         document.body.appendChild(line);
         updateLine(line, parentNode, childNode);
 
@@ -351,7 +369,6 @@
         startDragPosY = event.clientY;
 
         node.style.cursor = "grabbing";
-        setActiveNode(node);
         document.addEventListener("mousemove", onDrag);
         document.addEventListener("mouseup", stopDrag);
       }
@@ -405,37 +422,32 @@
         document.removeEventListener("mousemove", onDrag);
         document.removeEventListener("mouseup", stopDrag);
       }
-      function setInputDisplayText(text) {
-        text = text.replace(/ /g, "&nbsp;");
-
-        document.getElementById("inputDisplay").innerHTML =
-          text + '<span class="cursor"></span>';
-      }
 
       let isHoldingCtrlOrShift = false;
       let isHoldingAlt = false;
       document.addEventListener("keydown", function (event) {
+        const promptTxtBox = document.querySelector("#promptTxt");
+        const inputText = promptTxtBox.value;
         if (event.key === "Enter") {
-          const promptTxtBox = document.querySelector("#promptTxt");
-          const inputText = promptTxtBox.value;
-
           if (inputText.trim() !== "") {
             promptTxtBox.value = "";
             let newX = mouseX;
             let newY = mouseY;
-            if (activeNodes[0]) {
-              const activeNode = activeNodes[0];
+            if (memory[0]) {
+              const activeNode = memory[0];
               newX = parseInt(activeNode.style.left);
-              newY = parseInt(activeNode.style.top) + 150;
+              newY = parseInt(activeNode.style.top) - 150;
             }
             createNode(inputText, newX, newY);
+            //TODO: if activenode is not empty, then send to LLM else warn user
+            sendToLLM(activeNode);
           }
         } else if (event.key === "Control" || event.key === "Shift") {
           isHoldingCtrlOrShift = true;
         } else if (event.key === "Alt") {
           isHoldingAlt = true;
         } else if (event.key === "Delete") {
-          activeNodes.forEach((node) => {
+          nodes.forEach((node) => {
             if (node.lines) {
               node.lines.forEach((lineContainer) => {
                 lineContainer.line.remove();
@@ -453,13 +465,12 @@
 
             node.remove();
           });
-          activeNodes = [];
+          nodes = [];
         } else if (event.key === "Backspace") {
           inputText = inputText.slice(0, -1);
         } else {
-          console.log(event.key);
+        //   console.log(event.key);
         }
-        setInputDisplayText(inputText);
       });
       document.addEventListener("keyup", function (event) {
         if (event.key === "Control" || event.key === "Shift") {
@@ -478,10 +489,10 @@
       document.addEventListener("mousedown", function (event) {
         if (event.target === document.body) {
           if (isHoldingCtrlOrShift === false) {
-            activeNodes.forEach((activeNode) =>
-              activeNode.classList.remove("active")
+    
+            nodes.forEach((_node) =>
+              _node.classList.remove("active")
             );
-            activeNodes = [];
           }
 
           isDraggingBackground = true;
@@ -497,16 +508,15 @@
       document.addEventListener("mousemove", function (event) {
         mouseX = event.clientX;
         mouseY = event.clientY;
-
         if (isDraggingBackground) {
           const diffX = event.clientX - clickedBackgroundPosition.x;
           const diffY = event.clientY - clickedBackgroundPosition.y;
-          nodes.forEach((node) => {
-            node.style.left = `${parseInt(node.style.left) + diffX}px`;
-            node.style.top = `${parseInt(node.style.top) + diffY}px`;
-            if (node.lines) {
-              node.lines.forEach((lineContainer) => {
-                updateLine(lineContainer.line, node, lineContainer.target);
+          nodes.forEach((_node) => {
+            _node.style.left = `${parseInt(_node.style.left) + diffX}px`;
+            _node.style.top = `${parseInt(_node.style.top) + diffY}px`;
+            if (_node.lines) {
+              _node.lines.forEach((lineContainer) => {
+                updateLine(lineContainer.line, _node, lineContainer.target);
               });
             }
           });
@@ -519,7 +529,6 @@
         isDraggingBackground = false;
       });
 
-      setInputDisplayText("");
       main();
     </script>
   </body>
