@@ -151,7 +151,6 @@
         <h3>Context state</h3>
         <div id="nodeList">
           <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
-            <!-- Nodes will be dynamically added here -->
           </ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
@@ -159,7 +158,6 @@
     </div>
 
     <script>
-      /*upload txt section */
       const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
       uploadTxtBtn.addEventListener("click", function () {
         const [fileToUpload] = document.querySelector("#fileToUpload").files;
@@ -174,21 +172,18 @@
           reader.readAsText(fileToUpload);
         }
       });
-      /* end upload txt section */
 
       const NODE_OFFSET_Y = 150;
       let nodes = [];
-      //   let edges = {};
-
       let activeNodes = [];
-
       let memory = [];
       let isDragging = false;
       let draggedNode = null;
-
       let startDragPosX = 0;
       let startDragPosY = 0;
       let lastCreatedNode;
+      let mouseX = 0;
+      let mouseY = 0;
 
       function main() {}
 
@@ -244,12 +239,6 @@
       };
 
       function createNode(text, x, y, generatedByLLM = false) {
-        // const node = document.createElement("div");
-        // node.classList.add("node");
-        // node.textContent = text;
-        // node.style.left = x + "px";
-        // node.style.top = y + "px";
-        // document.body.appendChild(node);
         const node = document.createElement("div");
         node.classList.add("node");
         node.textContent = text;
@@ -335,26 +324,6 @@
                 true
               );
             }
-
-            // const centerOffset = 200; // distance from center for each additional response
-            // const numResponses = resonesNodeTexts.length;
-
-            // for (let i = 0; i < numResponses; i++) {
-            //   let xOffset;
-
-            //   if (numResponses === 1) {
-            //     // Center if only one response
-            //     xOffset = 0;
-            //   } else if (numResponses % 2 === 1) {
-            //     // For odd numbers, center the middle response
-            //     xOffset = (i - Math.floor(numResponses / 2)) * centerOffset;
-            //   } else {
-            //     // For even numbers, center around the middle, split evenly
-            //     xOffset = (i - (numResponses / 2 - 0.5)) * centerOffset;
-            //   }
-
-            //   createNode(resonesNodeTexts[i], nodePosition.x + xOffset, nodePosition.y + NODE_OFFSET_Y/2, true);
-            // }
           })
           .catch((error) => {
             console.error("Error:", error);
@@ -366,7 +335,7 @@
       }
 
       function setActiveNode(node) {
-        if (isHoldingCtrlOrShift === false) {
+        if (isHoldingCtrl === false && isHoldingShift === false) {
           activeNodes.forEach((activeNode) =>
             activeNode.classList.remove("active")
           );
@@ -480,7 +449,8 @@
         document.removeEventListener("pointerup", stopDrag);
       }
 
-      let isHoldingCtrlOrShift = false;
+      let isHoldingCtrl = false;
+      let isHoldingShift = false;
       let isHoldingAlt = false;
 
       function getNodePosition(node) {
@@ -521,8 +491,10 @@
           pos.y += NODE_OFFSET_Y;
 
           createNode(inputText, pos.x, pos.y);
-        } else if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = true;
+        } else if (event.key === "Control") {
+          isHoldingCtrl = true;
+        } else if (event.key === "Shift") {
+          isHoldingShift = true;
         } else if (event.key === "Alt") {
           isHoldingAlt = true;
         } else if (event.key === "Delete") {
@@ -550,8 +522,10 @@
         }
       });
       document.addEventListener("keyup", function (event) {
-        if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = false;
+        if (event.key === "Control") {
+          isHoldingCtrl = false;
+        } else if (event.key === "Shift") {
+          isHoldingShift = false;
         } else if (event.key === "Alt") {
           isHoldingAlt = false;
         }
@@ -565,7 +539,7 @@
 
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
-          if (isHoldingCtrlOrShift === false) {
+          if (isHoldingCtrl === false && isHoldingShift) {
             activeNodes.forEach((activeNode) =>
               activeNode.classList.remove("active")
             );
@@ -578,9 +552,6 @@
           clickedBackgroundPosition.y = event.clientY;
         }
       });
-
-      let mouseX = 0;
-      let mouseY = 0;
 
       document.addEventListener("pointermove", function (event) {
         mouseX = event.clientX;
