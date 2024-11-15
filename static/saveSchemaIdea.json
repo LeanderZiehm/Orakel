@@ -1,0 +1,18 @@
+{
+  "graph": {
+    "nodes": {
+      "nodeID1" : {
+
+        "x": 1,
+        "y": 1,
+        "text": "Alice"
+      },
+      "nodeID2":{
+       "x": 1,
+        "y": 1,
+        "text": "Bob"
+      }
+    },
+    "edges": [["nodeID1","nodeID2","parent"]]
+  }
+}
