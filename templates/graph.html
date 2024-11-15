@@ -39,10 +39,9 @@
         text-overflow: ellipsis;
         white-space: normal;
 
-        /* scrollbar styling */
+        /* scrolling styles */
         scrollbar-width: thin;
         scrollbar-color: white transparent;
-
         scroll-behavior: smooth;
       }
 
@@ -177,14 +176,7 @@
       });
       /* end upload txt section */
 
-        if (fileToUpload) {
-          reader.readAsText(fileToUpload);
-        }
-      });
-      /* end upload txt section */
-
       const NODE_OFFSET_Y = 150;
-
       let nodes = [];
       //   let edges = {};
 
@@ -434,8 +426,8 @@
 
         node.style.cursor = "grabbing";
         setActiveNode(node);
-          document.addEventListener("pointermove", onDrag);
-          document.addEventListener("pointerup", stopDrag);
+        document.addEventListener("pointermove", onDrag);
+        document.addEventListener("pointerup", stopDrag);
       }
 
       function onDrag(event) {
@@ -484,8 +476,8 @@
           draggedNode.style.cursor = "pointer";
         }
         draggedNode = null;
-          document.removeEventListener("pointermove", onDrag);
-          document.removeEventListener("pointerup", stopDrag);
+        document.removeEventListener("pointermove", onDrag);
+        document.removeEventListener("pointerup", stopDrag);
       }
 
       let isHoldingCtrlOrShift = false;
