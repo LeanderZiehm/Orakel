@@ -13,14 +13,13 @@ env = {k: v for k, v in (tuple(t.split("=")) for t in [l for l in env.split()])}
 
 # modelName = 'tinyllama'
 # modelName = 'llama3.1'
-modelName = env['MODEL'] if 'MODEL' in env else 'llama3.1'
+modelName = env["MODEL"] if "MODEL" in env else "llama3.1"
 
 app = Flask(__name__)
 
 
 @app.route("/")
 def index():
-    # return render_template('index.html')
     return render_template("graph.html")
 
 
@@ -37,7 +36,7 @@ Only list items that directly answer the question"""
 
     print(f"User:{user_message}")
 
-    if modelName == 'None':
+    if modelName == "None":
         return jsonify({"response": [user_message]})
 
     response = ollama.chat(model=modelName, messages=[{"role": "user", "content": promptContent}])
@@ -45,18 +44,15 @@ Only list items that directly answer the question"""
     chatbot_message = response["message"]["content"]  # f"I got:{user_message}. I give: " + response['message']['content']
 
     # remove [ and ] and split by comma
-    # remove char [
     # print(f"Chatbot Message:{chatbot_message}")
     chatbot_message = chatbot_message.replace('"', "").replace("[", "").replace("]", "")
     items = chatbot_message.split(",")
     print(f"Items:{items}")
-
     # return jsonify({'response':[chatbot_message]})
     return jsonify({"response": items})
 
 
-
 if __name__ == "__main__":
     PORT = int(env["PORT"]) if "PORT" in env else 5002
-    HOST = env['HOST'] if 'HOST' in env else '127.0.0.1'
+    HOST = env["HOST"] if "HOST" in env else "127.0.0.1"
     app.run(debug=True, port=PORT, host=HOST)

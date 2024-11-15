@@ -1,562 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Active Node Creation and Linking</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0;
-            position: relative;
-            user-select: none;
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f0f0f0;
+        position: relative;
+        user-select: none;
+      }
+
+      .node {
+        position: absolute;
+        background-color: red;
+        color: white;
+        font-size: large;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        padding: 10px 20px;
+      }
+
+      .node.active {
+        background-color: rgb(0, 255, 247);
+      }
+
+      .node.memorized {
+        background-color: rgb(0, 38, 255);
+      }
+
+      .line {
+        position: absolute;
+        height: 2px;
+        background-color: black;
+        transform-origin: 0 50%;
+        z-index: -1;
+      }
+
+      .cursor {
+        width: 1px;
+        height: 20px;
+        background-color: rgb(255, 123, 0);
+        animation: blink 1s step-end infinite;
+        margin-left: 0px;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
         }
 
-        .node {
-            position: absolute;
-            background-color: red;
-            color: white;
-            font-size: large;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            padding: 10px 20px;
+        50% {
+          opacity: 0;
         }
+      }
 
-        .node.active {
-            background-color: rgb(0, 255, 247);
-        }
-        .node.memorized {
-            background-color: rgb(0, 38, 255);
-        }
+      #inputs {
+        z-index: 100;
+        position: absolute;
+        bottom: 10px;
+        width: 90%;
+      }
 
+      #promptTxt {
+        padding: 10px 10px;
+        font-size: 16px;
+        background-color: #343434;
+        color: #f7fff7;
+        width: 100%;
+        border-radius: 5px;
+      }
 
-        .line {
-            position: absolute;
-            height: 2px;
-            background-color: black;
-            /* background: linear-gradient(to right, black, transparent); */
-            transform-origin: 0 50%;
-            /* Rotate from the left center */
-            z-index: -1;
-        }
-
-
-        .cursor {
-            width: 1px;
-            height: 20px;
-            background-color: rgb(255, 123, 0);
-            animation: blink 1s step-end infinite;
-            margin-left: 0px;
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0;
-            }
-        }
-
-        #inputs {
-            z-index: 100;
-            position: absolute;
-            bottom: 10px;
-            width: 90%;
-        }
-
-        #promptTxt {
-            padding: 10px 10px;
-            font-size: 16px;
-            background-color: #343434;
-            color: #F7FFF7;
-            width: 100%;
-            border-radius: 5px;
-        }
-
-        #fileUpload {
-            display: block;
-            padding: 10px 5px;
-            background-color: #343434;
-            color: #f0f0f0;
-            margin: 0 0 10px 0;
-            border-radius: 5px;
-        }
+      #fileUpload {
+        display: block;
+        padding: 10px 5px;
+        background-color: #343434;
+        color: #f0f0f0;
+        margin: 0 0 10px 0;
+        border-radius: 5px;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="inputs">
-        <input type="file" name="customFile" id="fileUpload" accept=".txt,.text">
-        <button>Process File</button>
-        <input placeholder="> type your prompt here" type="text" name="prompt" id="promptTxt" autofocus
-            spellcheck="true">
+      <input
+        type="file"
+        name="customFile"
+        id="fileUpload"
+        accept=".txt,.text"
+      />
+      <button>Process File</button>
+      <input
+        placeholder="> type your prompt here"
+        type="text"
+        name="prompt"
+        id="promptTxt"
+        autofocus
+        spellcheck="true"
+      />
     </div>
 
     <div id="container">
-        <div id="contextState" style="position: fixed; top: 10px; left: 10px; background-color: white; padding: 0px 10px 10px 10px; border: 1px solid black; border-radius: 5px;min-width: 200px;">
-            <h3>Context state</h3>
-            <div id="nodeList">
-            <ul id="nodeListContainer" style="list-style-type: none; padding: 0;">
-                <!-- Nodes will be dynamically added here -->
-            </ul>
-            </div>
-            <button onclick="clearNodes()">Clear</button>
+      <div
+        id="contextState"
+        style="
+          position: fixed;
+          top: 10px;
+          left: 10px;
+          background-color: white;
+          padding: 0px 10px 10px 10px;
+          border: 1px solid black;
+          border-radius: 5px;
+          min-width: 200px;
+        "
+      >
+        <h3>Context state</h3>
+        <div id="nodeList">
+          <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
+            <!-- Nodes will be dynamically added here -->
+          </ul>
         </div>
+        <button onclick="clearNodes()">Clear</button>
+      </div>
+    </div>
 
     <script>
+      let nodes = [];
+      let edges = {};
 
-        let nodes = [];
-        let edges = {};
+      let activeNodes = [];
 
-        // let inputText = '';
-        let activeNodes = [];
- 
-        let memory = [];
-        let isDragging = false;
-        let draggedNode = null;
-        // let offsetX = 0, offsetY = 0;
-        let startDragPosX = 0, startDragPosY = 0;
+      let memory = [];
+      let isDragging = false;
+      let draggedNode = null;
 
-        function main(){}
-            // createNode('Generate me 5 interesting names.', 400, 200);
-        function updateNodeList() {
-                    const nodeListContainer = document.getElementById('nodeListContainer');
-                    nodeListContainer.innerHTML = ''; // Clear the list
+      let startDragPosX = 0,
+        startDragPosY = 0;
 
-                    memory.forEach((node, index) => {
-                        const listItem = document.createElement('li');
-                        listItem.style.display = 'flex';
-                        listItem.style.justifyContent = 'space-between';
-                        listItem.style.alignItems = 'center';
-                        listItem.style.backgroundColor = 'black';
-                        listItem.style.color = 'white';
-                        listItem.style.padding = '5px 10px';
-                        listItem.style.marginBottom = '5px';
-                        listItem.style.borderRadius = '5px';
+      function main() {}
 
-                        const nodeText = document.createElement('span');
-                        nodeText.textContent = node.textContent;
+      function updateNodeList() {
+        const nodeListContainer = document.getElementById("nodeListContainer");
+        nodeListContainer.innerHTML = "";
 
-                        const deleteButton = document.createElement('button');
-                        deleteButton.innerHTML = '&#10006;'; // Cross icon
-                        deleteButton.style.background = 'none';
-                        deleteButton.style.border = 'none';
-                        deleteButton.style.color = 'white';
-                        deleteButton.style.cursor = 'pointer';
-                        deleteButton.addEventListener('click', () => removeNodeFromMemory(node));
+        memory.forEach((node, index) => {
+          const listItem = document.createElement("li");
+          listItem.style.display = "flex";
+          listItem.style.justifyContent = "space-between";
+          listItem.style.alignItems = "center";
+          listItem.style.backgroundColor = "black";
+          listItem.style.color = "white";
+          listItem.style.padding = "5px 10px";
+          listItem.style.marginBottom = "5px";
+          listItem.style.borderRadius = "5px";
 
-                        listItem.appendChild(nodeText);
-                        listItem.appendChild(deleteButton);
-                        nodeListContainer.appendChild(listItem);
-                    });
-                }
+          const nodeText = document.createElement("span");
+          nodeText.textContent = node.textContent;
 
-        function clearNodes() {
-            memory.forEach(node => setMemorizedNode(node));
-            memory = [];
-            updateNodeList();
-        }
+          const deleteButton = document.createElement("button");
+          deleteButton.innerHTML = "&#10006;";
+          deleteButton.style.background = "none";
+          deleteButton.style.border = "none";
+          deleteButton.style.color = "white";
+          deleteButton.style.cursor = "pointer";
+          deleteButton.addEventListener("click", () =>
+            removeNodeFromMemory(node)
+          );
 
-        function removeNodeFromMemory(node) {
-            memory = memory.filter(memoryNode => memoryNode !== node);
+          listItem.appendChild(nodeText);
+          listItem.appendChild(deleteButton);
+          nodeListContainer.appendChild(listItem);
+        });
+      }
+
+      function clearNodes() {
+        memory.forEach((node) => setMemorizedNode(node));
+        memory = [];
+        updateNodeList();
+      }
+
+      function removeNodeFromMemory(node) {
+        memory = memory.filter((memoryNode) => memoryNode !== node);
+        setMemorizedNode(node);
+        updateNodeList();
+      }
+
+      memory.push = function () {
+        Array.prototype.push.apply(this, arguments);
+        updateNodeList();
+      };
+
+      function createNode(text, x, y, generatedByLLM = false) {
+        const node = document.createElement("div");
+        node.classList.add("node");
+        node.textContent = text;
+        node.style.left = x + "px";
+        node.style.top = y + "px";
+        document.body.appendChild(node);
+
+        node.addEventListener("dblclick", () => {
+          if (node.classList.contains("memorized")) {
+            node.classList.remove("memorized");
+            activeNodes = activeNodes.filter(
+              (activeNode) => activeNode !== node
+            );
+            memory = memory.filter((memoryNode) => memoryNode !== node);
+          } else {
             setMemorizedNode(node);
-            updateNodeList();
+            if (!memory.includes(node)) {
+              memory.push(node);
+            }
+          }
+          updateNodeList();
+        });
+
+        node.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          sendToLLM(node);
+        });
+
+        node.addEventListener("mousedown", (e) => startDrag(e, node));
+
+        if (activeNodes.length > 0) {
+          activeNodes.forEach((activeNode) => {
+            makeParent(activeNode, node);
+          });
         }
-            // Call updateNodeList whenever nodes are added or removed
-        memory.push = function() {
-            Array.prototype.push.apply(this, arguments);
-            updateNodeList();
-        };
-        
-        
-        function createNode(text, x, y,generatedByLLM=false) {
+        nodes.push(node);
 
+        if (generatedByLLM === false) {
+          sendToLLM(node);
+          setActiveNode(node);
+        }
+      }
 
+      function sendToLLM(node) {
+        const x = parseInt(node.style.left);
+        const y = parseInt(node.style.top);
 
-            const node = document.createElement('div');
-            node.classList.add('node');
-            node.textContent = text;
-            node.style.left = x + 'px';
-            node.style.top = y + 'px';
-            document.body.appendChild(node);
-            
-            node.addEventListener('dblclick', () => {
-                if (node.classList.contains('memorized')) {
-                    node.classList.remove('memorized');
-                    activeNodes = activeNodes.filter(activeNode => activeNode !== node);
-                    memory = memory.filter(memoryNode => memoryNode !== node);
-                   
-                } else {
-                    setMemorizedNode(node);
-                    if (!memory.includes(node)) {
-                        memory.push(node);
-                    }
+        let promptForLLM = "[";
+
+        for (let i = 0; i < activeNodes.length; i++) {
+          promptForLLM += `${activeNodes[i].textContent}`;
+
+          if (i < activeNodes.length - 1) {
+            promptForLLM += ",";
+          }
+          if (i === activeNodes.length - 1) {
+            promptForLLM += ` connected to `;
+          }
+        }
+        promptForLLM += `${node.textContent}]`;
+
+        fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: promptForLLM }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const resonesNodeTexts = data["response"];
+
+            for (let i = 0; i < resonesNodeTexts.length; i++) {
+              createNode(resonesNodeTexts[i], x + i * 200 - 200, y + 100, true);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function setMemorizedNode(node) {
+        node.classList.toggle("memorized");
+      }
+
+      function setActiveNode(node) {
+        if (isHoldingCtrlOrShift === false) {
+          activeNodes.forEach((activeNode) =>
+            activeNode.classList.remove("active")
+          );
+          activeNodes = [];
+        }
+        activeNodes.push(node);
+
+        node.classList.add("active");
+      }
+
+      function makeParent(parentNode, childNode) {
+        const line = document.createElement("div");
+        console.log("line", line);
+        line.classList.add("line");
+        document.body.appendChild(line);
+        updateLine(line, parentNode, childNode);
+
+        parentNode.lines = parentNode.lines || [];
+        childNode.lines = childNode.lines || [];
+        parentNode.lines.push({
+          line,
+          target: childNode,
+          type: "targetIsChild",
+        });
+        childNode.lines.push({
+          line,
+          target: parentNode,
+          type: "targetIsParent",
+        });
+      }
+
+      function updateLine(line, node1, node2) {
+        const node1Pos = node1.getBoundingClientRect();
+        const node2Pos = node2.getBoundingClientRect();
+
+        const x1 = node1Pos.left + node1Pos.width / 2;
+        const y1 = node1Pos.top + node1Pos.height / 2;
+        const x2 = node2Pos.left + node2Pos.width / 2;
+        const y2 = node2Pos.top + node2Pos.height / 2;
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        line.style.width = `${distance}px`;
+        line.style.left = `${x1}px`;
+        line.style.top = `${y1}px`;
+        line.style.transform = `rotate(${angle}deg)`;
+      }
+
+      function startDrag(event, node) {
+        isDragging = true;
+        draggedNode = node;
+        startDragPosX = event.clientX;
+        startDragPosY = event.clientY;
+
+        node.style.cursor = "grabbing";
+        setActiveNode(node);
+        document.addEventListener("mousemove", onDrag);
+        document.addEventListener("mouseup", stopDrag);
+      }
+
+      function onDrag(event) {
+        if (isDragging && draggedNode) {
+          let offsetX = event.clientX - startDragPosX;
+          let offsetY = event.clientY - startDragPosY;
+
+          startDragPosX = event.clientX;
+          startDragPosY = event.clientY;
+
+          const x = draggedNode.getBoundingClientRect().left + offsetX;
+          const y = draggedNode.getBoundingClientRect().top + offsetY;
+          draggedNode.style.left = `${x}px`;
+          draggedNode.style.top = `${y}px`;
+
+          if (draggedNode.lines) {
+            draggedNode.lines.forEach((lineContainer) => {
+              if (isHoldingAlt == false) {
+                if (lineContainer.type == "targetIsChild") {
+                  const child = lineContainer.target;
+
+                  const x = child.getBoundingClientRect().left + offsetX;
+                  const y = child.getBoundingClientRect().top + offsetY;
+                  child.style.left = `${x}px`;
+                  child.style.top = `${y}px`;
+
+                  updateLines(child);
                 }
-                updateNodeList();
+              }
+
+              updateLine(lineContainer.line, draggedNode, lineContainer.target);
             });
-
-            node.addEventListener('contextmenu', (event) => {
-                event.preventDefault();  // Prevent the default right-click menu from appearing
-                sendToLLM(node);
-            });
-            
-            node.addEventListener('mousedown', (e) => startDrag(e, node));
-
-            if (activeNodes.length > 0) {
-                activeNodes.forEach(activeNode => {
-                    makeParent(activeNode, node);
-                });
-            }
-            nodes.push(node);
-
-            if (generatedByLLM === false) {
-                sendToLLM(node);
-                setActiveNode(node);  
-            }
+          }
         }
+      }
 
-
-        function sendToLLM(node) {
-            const x = parseInt(node.style.left);
-            const y = parseInt(node.style.top);
-
-            let promptForLLM = '[';
-
-            //instead do for i loop
-            for (let i = 0; i < activeNodes.length; i++) {
-                //if more then one add comma
-                promptForLLM += `${activeNodes[i].textContent}`;
-
-                if (i < activeNodes.length - 1) {
-                    promptForLLM += ',';
-                }
-                if ((i === activeNodes.length - 1)) {
-                    promptForLLM += ` connected to `;
-                }
-
-            }
-            promptForLLM += `${node.textContent}]`;
-
-            fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: promptForLLM })
-            })
-                .then(response => response.json())
-                .then(data => {
-
-                    const resonesNodeTexts = data['response'];
-
-                    //    createNode(resonesNodeText, x, y + 100, true);
-                    for (let i = 0; i < resonesNodeTexts.length; i++) {
-                        createNode(resonesNodeTexts[i], x + i * 200 - 200, y + 100, true);
-                    }
-
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    // callback('Error: Unable to get a response from the bot.', null);
-                });
-        }
-        
-        function setMemorizedNode(node){
-            node.classList.toggle('memorized');
-        }
- 
-        function setActiveNode(node) {
-
-            if (isHoldingCtrlOrShift === false) {
-                activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
-                activeNodes = [];
-            }
-            activeNodes.push(node);
-
-            node.classList.add('active');
-        }
-
-        function makeParent(parentNode, childNode) {
-            const line = document.createElement('div');
-            console.log('line', line);
-            line.classList.add('line');
-            document.body.appendChild(line);
-            updateLine(line, parentNode, childNode);
-
-            // Attach line to nodes for future reference if needed
-            parentNode.lines = parentNode.lines || [];
-            childNode.lines = childNode.lines || [];
-            parentNode.lines.push({ line, target: childNode,type:'targetIsChild' });
-            childNode.lines.push({ line, target: parentNode, type: "targetIsParent" });
-        }
-
-        function updateLine(line, node1, node2) {
-            const node1Pos = node1.getBoundingClientRect();
-            const node2Pos = node2.getBoundingClientRect();
-
-            const x1 = node1Pos.left + node1Pos.width / 2;
-            const y1 = node1Pos.top + node1Pos.height / 2;
-            const x2 = node2Pos.left + node2Pos.width / 2;
-            const y2 = node2Pos.top + node2Pos.height / 2;
-
-            // Calculate distance and angle between the two nodes
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-            // Set line's position, length, and rotation
-            line.style.width = `${distance}px`;
-            line.style.left = `${x1}px`;
-            line.style.top = `${y1}px`;
-            line.style.transform = `rotate(${angle}deg)`;
-        }
-
-        function startDrag(event, node) {
-            isDragging = true;
-            draggedNode = node;
-            startDragPosX = event.clientX;
-            startDragPosY = event.clientY;
-
-            // offsetX = event.clientX - node.getBoundingClientRect().left;
-            // offsetY = event.clientY - node.getBoundingClientRect().top;
-            node.style.cursor = 'grabbing';
-            setActiveNode(node);
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        }
-
-        function onDrag(event) {
-            if (isDragging && draggedNode) {
-
-                
-                let offsetX =  event.clientX - startDragPosX;
-                let offsetY =  event.clientY - startDragPosY;
-
-                startDragPosX = event.clientX;
-                startDragPosY = event.clientY;
-
-
-                const x = draggedNode.getBoundingClientRect().left + offsetX;
-                const y = draggedNode.getBoundingClientRect().top + offsetY;
-                draggedNode.style.left = `${x}px`;
-                draggedNode.style.top = `${y}px`;
-
-                if (draggedNode.lines) {
-                    draggedNode.lines.forEach(lineContainer => {
-
-
-                        if(lineContainer.type == 'targetIsChild'){
-                           const child =  lineContainer.target;
-
-                            const x = child.getBoundingClientRect().left + offsetX;
-                            const y = child.getBoundingClientRect().top + offsetY;
-                            child.style.left = `${x}px`;
-                            child.style.top = `${y}px`;
-
-                            updateLines(child);
-
-
-
-
-
-
-                           
-                        }
-                        
-                        updateLine(lineContainer.line, draggedNode, lineContainer.target);
-                    });
-                }
-                // nodes.forEach(node => {
-                //     if (node !== draggedNode && node.lines) {
-                //         node.lines.forEach(({ line, target }) => {
-                //             if (target === draggedNode) {
-                //                 updateLine(line, node, draggedNode);
-                //             }
-                //         });
-                //     }
-                // });
-            }
-        }
-
-        function updateLines(node){
-            node.lines.forEach(lineContainer => {
-                  updateLine(lineContainer.line, node, lineContainer.target);
-            });
-        }
-
-
-        function stopDrag() {
-            isDragging = false;
-            if (draggedNode) {
-                draggedNode.style.cursor = 'pointer';
-            }
-            draggedNode = null;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-        function setInputDisplayText(text) {
-            //change space to &nbsp;
-            text = text.replace(/ /g, '&nbsp;');
-
-            // white - space: pre;
-            document.getElementById('inputDisplay').innerHTML = text + '<span class="cursor"></span>';
-
-        }
-
-        let isHoldingCtrlOrShift = false;
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter') {
-
-                const promptTxtBox = document.querySelector("#promptTxt");
-                const inputText = promptTxtBox.value;
-
-                if(inputText.trim() !== ''){
-                    promptTxtBox.value = '';
-                    let newX = mouseX;
-                    let newY = mouseY;
-                    if (activeNodes[0]) {
-                        const activeNode = activeNodes[0];
-                        newX = parseInt(activeNode.style.left);
-                        newY = parseInt(activeNode.style.top) + 150;
-                    }
-                    createNode(inputText, newX, newY);
-                }
-             
-            
-            }
-            // if is ctrl or shift or alt
-            else if (event.key === 'Control' || event.key === 'Shift') {
-                isHoldingCtrlOrShift = true;
-            }
-            else if (event.key === 'Delete') {
-
-
-               ///////////////////// // MIGHT HAVE TO CHECK FOR AGAIN
-                activeNodes.forEach(node => {
-                             if (node.lines) {
-                        node.lines.forEach(lineContainer => {
-                            // Remove the line
-                            lineContainer.line.remove();
-
-                            // Remove the reference to the line from the connected node
-                            if (lineContainer.target.lines) {
-                                lineContainer.target.lines = lineContainer.target.lines.filter(connection => connection.target !== node);
-                            }
-                        });
-                    }
-
-                    // Remove the node from the global nodes array
-                    nodes = nodes.filter(existingNode => existingNode !== node);
-
-                    // Remove the current node
-                    node.remove();
-                });
-                activeNodes = []; // Clear the activeNodes list after removal
-
-
-                ///////////////////// //
-
-            }
-            // else if (event.key.length === 1) {
-                // inputText += event.key;
-            // }
-             else if (event.key === 'Backspace') {
-                inputText = inputText.slice(0, -1);
-            } else {
-                console.log(event.key);
-            }
-            setInputDisplayText(inputText);
-
+      function updateLines(node) {
+        node.lines.forEach((lineContainer) => {
+          updateLine(lineContainer.line, node, lineContainer.target);
         });
-        document.addEventListener('keyup', function (event) {
-            if (event.key === 'Control' || event.key === 'Shift') {
-                isHoldingCtrlOrShift = false;
+      }
+
+      function stopDrag() {
+        isDragging = false;
+        if (draggedNode) {
+          draggedNode.style.cursor = "pointer";
+        }
+        draggedNode = null;
+        document.removeEventListener("mousemove", onDrag);
+        document.removeEventListener("mouseup", stopDrag);
+      }
+      function setInputDisplayText(text) {
+        text = text.replace(/ /g, "&nbsp;");
+
+        document.getElementById("inputDisplay").innerHTML =
+          text + '<span class="cursor"></span>';
+      }
+
+      let isHoldingCtrlOrShift = false;
+      let isHoldingAlt = false;
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          const promptTxtBox = document.querySelector("#promptTxt");
+          const inputText = promptTxtBox.value;
+
+          if (inputText.trim() !== "") {
+            promptTxtBox.value = "";
+            let newX = mouseX;
+            let newY = mouseY;
+            if (activeNodes[0]) {
+              const activeNode = activeNodes[0];
+              newX = parseInt(activeNode.style.left);
+              newY = parseInt(activeNode.style.top) + 150;
             }
-        });
+            createNode(inputText, newX, newY);
+          }
+        } else if (event.key === "Control" || event.key === "Shift") {
+          isHoldingCtrlOrShift = true;
+        } else if (event.key === "Alt") {
+          isHoldingAlt = true;
+        } else if (event.key === "Delete") {
+          activeNodes.forEach((node) => {
+            if (node.lines) {
+              node.lines.forEach((lineContainer) => {
+                lineContainer.line.remove();
 
-
-
-
-        let clickedBackgroundPosition = { x: 0, y: 0 };
-
-        //if click on background then remove active node 
-
-
-        //dragging background to move all nodes
-        let isDraggingBackground = false;
-        let offsetXBackground = 0, offsetYBackground = 0;
- 
-
-        document.addEventListener('mousedown', function (event) {
-            if (event.target === document.body) {
-
-                if (isHoldingCtrlOrShift === false) {
-                   activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
-                    activeNodes = [];
-
+                if (lineContainer.target.lines) {
+                  lineContainer.target.lines =
+                    lineContainer.target.lines.filter(
+                      (connection) => connection.target !== node
+                    );
                 }
-                
-                isDraggingBackground = true;
-
-                clickedBackgroundPosition.x = event.clientX;
-                clickedBackgroundPosition.y = event.clientY;
+              });
             }
-        });
 
-        let mouseX = 0;
-        let mouseY = 0;
+            nodes = nodes.filter((existingNode) => existingNode !== node);
 
-    
+            node.remove();
+          });
+          activeNodes = [];
+        } else if (event.key === "Backspace") {
+          inputText = inputText.slice(0, -1);
+        } else {
+          console.log(event.key);
+        }
+        setInputDisplayText(inputText);
+      });
+      document.addEventListener("keyup", function (event) {
+        if (event.key === "Control" || event.key === "Shift") {
+          isHoldingCtrlOrShift = false;
+        } else if (event.key === "Alt") {
+          isHoldingAlt = false;
+        }
+      });
 
-        document.addEventListener('mousemove', function (event) {
-            mouseX = event.clientX;
-            mouseY = event.clientY;
-            // console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}`);
+      let clickedBackgroundPosition = { x: 0, y: 0 };
 
-            if (isDraggingBackground) {
-                const diffX = event.clientX - clickedBackgroundPosition.x;
-                const diffY = event.clientY - clickedBackgroundPosition.y;
-                nodes.forEach(node => {
-                    node.style.left = `${parseInt(node.style.left) + diffX}px`;
-                    node.style.top = `${parseInt(node.style.top) + diffY}px`;
-                    if (node.lines) {
-                        node.lines.forEach(lineContainer => {
-                            updateLine(lineContainer.line, node, lineContainer.target);
-                        });
-                    }
-                });
+      let isDraggingBackground = false;
+      let offsetXBackground = 0,
+        offsetYBackground = 0;
 
-                // console.log(`event.clientX: ${event.clientX}, event.clientY: ${event.clientY} offsetXBackground: ${offsetXBackground}, offsetYBackground: ${offsetYBackground}`);
-                clickedBackgroundPosition.x = event.clientX;
-                clickedBackgroundPosition.y = event.clientY;
+      document.addEventListener("mousedown", function (event) {
+        if (event.target === document.body) {
+          if (isHoldingCtrlOrShift === false) {
+            activeNodes.forEach((activeNode) =>
+              activeNode.classList.remove("active")
+            );
+            activeNodes = [];
+          }
+
+          isDraggingBackground = true;
+
+          clickedBackgroundPosition.x = event.clientX;
+          clickedBackgroundPosition.y = event.clientY;
+        }
+      });
+
+      let mouseX = 0;
+      let mouseY = 0;
+
+      document.addEventListener("mousemove", function (event) {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+
+        if (isDraggingBackground) {
+          const diffX = event.clientX - clickedBackgroundPosition.x;
+          const diffY = event.clientY - clickedBackgroundPosition.y;
+          nodes.forEach((node) => {
+            node.style.left = `${parseInt(node.style.left) + diffX}px`;
+            node.style.top = `${parseInt(node.style.top) + diffY}px`;
+            if (node.lines) {
+              node.lines.forEach((lineContainer) => {
+                updateLine(lineContainer.line, node, lineContainer.target);
+              });
             }
-        });
-        document.addEventListener('mouseup', function (event) {
-            isDraggingBackground = false;
-        });
+          });
 
-        setInputDisplayText('');
-        main();
-        
+          clickedBackgroundPosition.x = event.clientX;
+          clickedBackgroundPosition.y = event.clientY;
+        }
+      });
+      document.addEventListener("mouseup", function (event) {
+        isDraggingBackground = false;
+      });
+
+      setInputDisplayText("");
+      main();
     </script>
-</body>
-
+  </body>
 </html>

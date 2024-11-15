@@ -14,11 +14,22 @@ KEY=VALUE
 example:
 
 ```text
-PORT=5014
+PORT=5005
 DEBUG=1
 HOST=0.0.0.0
 MODEL=None
 ```
+
+if your computer is not powerful enough for a local lanaugage model just do 
+
+MODEL=None 
+
+if you put nothing it will be 
+
+MODEL=llama3.1
+
+
+
 
 > at this commit the env parsing doesn't allow variables inside the values
 
