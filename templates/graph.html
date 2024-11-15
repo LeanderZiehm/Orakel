@@ -152,8 +152,10 @@
       >
         <h3>Context state</h3>
         <div id="nodeList">
-          <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
-          </ul>
+          <ul
+            id="nodeListContainer"
+            style="list-style-type: none; padding: 0"
+          ></ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
       </div>
@@ -190,6 +192,9 @@
       let isDraggingBackground = false;
       let offsetXBackground = 0;
       let offsetYBackground = 0;
+      let isHoldingCtrl = false;
+      let isHoldingShift = false;
+      let isHoldingAlt = false;
 
       function main() {}
 
@@ -411,7 +416,7 @@
       }
 
       function onDrag(event) {
-        if (isHoldingCtrl||isHoldingShift) {
+        if (isHoldingCtrl || isHoldingShift) {
           return;
         }
         if (isDragging && draggedNode) {
@@ -463,9 +468,7 @@
         document.removeEventListener("pointerup", stopDrag);
       }
 
-      let isHoldingCtrl = false;
-      let isHoldingShift = false;
-      let isHoldingAlt = false;
+
 
       function getNodePosition(node) {
         const boundingBox = node.getBoundingClientRect();
@@ -538,8 +541,6 @@
         }
       });
 
-
-
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
           if (isHoldingCtrl === false && isHoldingShift == false) {
@@ -550,7 +551,6 @@
           }
 
           isDraggingBackground = true;
-
           clickedBackgroundPosition.x = event.clientX;
           clickedBackgroundPosition.y = event.clientY;
         }
