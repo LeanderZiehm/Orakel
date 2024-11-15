@@ -107,11 +107,17 @@
     </div>
 
     <script>
-        let activeNodes = [];
+
         let nodes = [];
+        let edges = {};
+
+        let inputText = '';
+        let activeNodes = [];
+ 
         let isDragging = false;
         let draggedNode = null;
-        let offsetX = 0, offsetY = 0;
+        // let offsetX = 0, offsetY = 0;
+        let startDragPosX = 0, startDragPosY = 0;
 
         function main() {
             // createNode('Generate me 5 interesting names.', 400, 200);
@@ -135,7 +141,7 @@
 
             if (activeNodes.length > 0) {
                 activeNodes.forEach(activeNode => {
-                    createLine(activeNode, node);
+                    makeParent(activeNode, node);
                 });
             }
             nodes.push(node);
@@ -178,6 +184,8 @@
                 .then(data => {
 
                     const resonesNodeTexts = data['response'];
+
+                    //    createNode(resonesNodeText, x, y + 100, true);
                     for (let i = 0; i < resonesNodeTexts.length; i++) {
                         createNode(resonesNodeTexts[i], x + i * 200 - 200, y + 100, true);
                     }
@@ -200,18 +208,18 @@
             node.classList.add('active');
         }
 
-        function createLine(node1, node2) {
+        function makeParent(parentNode, childNode) {
             const line = document.createElement('div');
             console.log('line', line);
             line.classList.add('line');
             document.body.appendChild(line);
-            updateLine(line, node1, node2);
+            updateLine(line, parentNode, childNode);
 
             // Attach line to nodes for future reference if needed
-            node1.lines = node1.lines || [];
-            node2.lines = node2.lines || [];
-            node1.lines.push({ line, target: node2 });
-            node2.lines.push({ line, target: node1 });
+            parentNode.lines = parentNode.lines || [];
+            childNode.lines = childNode.lines || [];
+            parentNode.lines.push({ line, target: childNode,type:'targetIsChild' });
+            childNode.lines.push({ line, target: parentNode, type: "targetIsParent" });
         }
 
         function updateLine(line, node1, node2) {
@@ -239,8 +247,11 @@
         function startDrag(event, node) {
             isDragging = true;
             draggedNode = node;
-            offsetX = event.clientX - node.getBoundingClientRect().left;
-            offsetY = event.clientY - node.getBoundingClientRect().top;
+            startDragPosX = event.clientX;
+            startDragPosY = event.clientY;
+
+            // offsetX = event.clientX - node.getBoundingClientRect().left;
+            // offsetY = event.clientY - node.getBoundingClientRect().top;
             node.style.cursor = 'grabbing';
             setActiveNode(node);
             document.addEventListener('mousemove', onDrag);
@@ -249,27 +260,63 @@
 
         function onDrag(event) {
             if (isDragging && draggedNode) {
-                const x = event.clientX - offsetX;
-                const y = event.clientY - offsetY;
+
+                
+                let offsetX =  event.clientX - startDragPosX;
+                let offsetY =  event.clientY - startDragPosY;
+
+                startDragPosX = event.clientX;
+                startDragPosY = event.clientY;
+
+
+                const x = draggedNode.getBoundingClientRect().left + offsetX;
+                const y = draggedNode.getBoundingClientRect().top + offsetY;
                 draggedNode.style.left = `${x}px`;
                 draggedNode.style.top = `${y}px`;
-                if (draggedNode.lines) {
-                    draggedNode.lines.forEach(({ line, target }) => {
 
-                        updateLine(line, draggedNode, target);
+                if (draggedNode.lines) {
+                    draggedNode.lines.forEach(lineContainer => {
+
+
+                        if(lineContainer.type == 'targetIsChild'){
+                           const child =  lineContainer.target;
+
+                            const x = child.getBoundingClientRect().left + offsetX;
+                            const y = child.getBoundingClientRect().top + offsetY;
+                            child.style.left = `${x}px`;
+                            child.style.top = `${y}px`;
+
+                            updateLines(child);
+
+
+
+
+
+
+                           
+                        }
+                        
+                        updateLine(lineContainer.line, draggedNode, lineContainer.target);
                     });
                 }
-                nodes.forEach(node => {
-                    if (node !== draggedNode && node.lines) {
-                        node.lines.forEach(({ line, target }) => {
-                            if (target === draggedNode) {
-                                updateLine(line, node, draggedNode);
-                            }
-                        });
-                    }
-                });
+                // nodes.forEach(node => {
+                //     if (node !== draggedNode && node.lines) {
+                //         node.lines.forEach(({ line, target }) => {
+                //             if (target === draggedNode) {
+                //                 updateLine(line, node, draggedNode);
+                //             }
+                //         });
+                //     }
+                // });
             }
         }
+
+        function updateLines(node){
+            node.lines.forEach(lineContainer => {
+                  updateLine(lineContainer.line, node, lineContainer.target);
+            });
+        }
+
 
         function stopDrag() {
             isDragging = false;
@@ -280,46 +327,99 @@
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
         }
+        function setInputDisplayText(text) {
+            //change space to &nbsp;
+            text = text.replace(/ /g, '&nbsp;');
+
+            // white - space: pre;
+            document.getElementById('inputDisplay').innerHTML = text + '<span class="cursor"></span>';
+
+        }
 
         let isHoldingCtrlOrShift = false;
-
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter') {
-                const promptTxtBox = document.querySelector("#promptTxt");
-                const inputText = promptTxtBox.value;
-
+            if (event.key === 'Enter' && inputText.trim() !== '') {
                 let newX = mouseX;
                 let newY = mouseY;
-
                 if (activeNodes[0]) {
                     const activeNode = activeNodes[0];
-                    newX = parseInt(activeNode.style.left) + 150;
-                    newY = parseInt(activeNode.style.top);
+                    newX = parseInt(activeNode.style.left);
+                    newY = parseInt(activeNode.style.top)+ 150;
                 }
                 createNode(inputText, newX, newY);
-                promptTxtBox.value = '';
-            } else if (event.key === 'Control' || event.key === 'Shift') {
-                isHoldingCtrlOrShift = true;
-            } else {
-                return;
+                inputText = '';
             }
-        });
+            // if is ctrl or shift or alt
+            else if (event.key === 'Control' || event.key === 'Shift') {
+                isHoldingCtrlOrShift = true;
+            }
+            else if (event.key === 'Delete') {
 
+
+               ///////////////////// // MIGHT HAVE TO CHECK FOR AGAIN
+                activeNodes.forEach(node => {
+                             if (node.lines) {
+                        node.lines.forEach(lineContainer => {
+                            // Remove the line
+                            lineContainer.line.remove();
+
+                            // Remove the reference to the line from the connected node
+                            if (lineContainer.target.lines) {
+                                lineContainer.target.lines = lineContainer.target.lines.filter(connection => connection.target !== node);
+                            }
+                        });
+                    }
+
+                    // Remove the node from the global nodes array
+                    nodes = nodes.filter(existingNode => existingNode !== node);
+
+                    // Remove the current node
+                    node.remove();
+                });
+                activeNodes = []; // Clear the activeNodes list after removal
+
+
+                ///////////////////// //
+
+            }
+            else if (event.key.length === 1) {
+                inputText += event.key;
+            } else if (event.key === 'Backspace') {
+                inputText = inputText.slice(0, -1);
+            } else {
+                console.log(event.key);
+            }
+            setInputDisplayText(inputText);
+
+        });
         document.addEventListener('keyup', function (event) {
             if (event.key === 'Control' || event.key === 'Shift') {
                 isHoldingCtrlOrShift = false;
             }
         });
 
+
+
+
         let clickedBackgroundPosition = { x: 0, y: 0 };
+
+        //if click on background then remove active node 
+
+
+        //dragging background to move all nodes
         let isDraggingBackground = false;
         let offsetXBackground = 0, offsetYBackground = 0;
+ 
 
         document.addEventListener('mousedown', function (event) {
             if (event.target === document.body) {
-                activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
-                activeNodes = [];
 
+                if (isHoldingCtrlOrShift === false) {
+                   activeNodes.forEach(activeNode => activeNode.classList.remove('active'));
+                    activeNodes = [];
+
+                }
+                
                 isDraggingBackground = true;
 
                 clickedBackgroundPosition.x = event.clientX;
@@ -329,6 +429,8 @@
 
         let mouseX = 0;
         let mouseY = 0;
+
+    
 
         document.addEventListener('mousemove', function (event) {
             mouseX = event.clientX;
@@ -342,8 +444,8 @@
                     node.style.left = `${parseInt(node.style.left) + diffX}px`;
                     node.style.top = `${parseInt(node.style.top) + diffY}px`;
                     if (node.lines) {
-                        node.lines.forEach(({ line, target }) => {
-                            updateLine(line, node, target);
+                        node.lines.forEach(lineContainer => {
+                            updateLine(lineContainer.line, node, lineContainer.target);
                         });
                     }
                 });
@@ -353,12 +455,17 @@
                 clickedBackgroundPosition.y = event.clientY;
             }
         });
-
         document.addEventListener('mouseup', function (event) {
             isDraggingBackground = false;
         });
 
+
+
+
+
+        setInputDisplayText('');
         main();
+        
     </script>
 </body>
 
