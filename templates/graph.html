@@ -31,13 +31,20 @@
         padding: 10px 20px;
 
         /* clip excess text */
-        max-width: 350px;
-        max-height: 350px;
+        max-width: 450px;
+        max-height: 450px;
         display: -webkit-box;
         overflow-x: hidden;
         overflow-y: auto;
         text-overflow: ellipsis;
         white-space: normal;
+
+        /* scrolling styles */
+        scrollbar-width: thin;
+        scrollbar-color: white transparent;
+        scroll-behavior: smooth;
+
+        resize: both;
       }
 
       .node.active {
@@ -145,16 +152,16 @@
       >
         <h3>Context state</h3>
         <div id="nodeList">
-          <ul id="nodeListContainer" style="list-style-type: none; padding: 0">
-            <!-- Nodes will be dynamically added here -->
-          </ul>
+          <ul
+            id="nodeListContainer"
+            style="list-style-type: none; padding: 0"
+          ></ul>
         </div>
         <button onclick="clearNodes()">Clear</button>
       </div>
     </div>
 
     <script>
-      /*upload txt section */
       const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
       uploadTxtBtn.addEventListener("click", function () {
         const [fileToUpload] = document.querySelector("#fileToUpload").files;
@@ -169,24 +176,25 @@
           reader.readAsText(fileToUpload);
         }
       });
-      /* end upload txt section */
 
-    const NODE_OFFSET_Y = 150;
-
+      const NODE_OFFSET_Y = 150;
       let nodes = [];
-    //   let edges = {};
-
-
-
       let activeNodes = [];
-
       let memory = [];
       let isDragging = false;
       let draggedNode = null;
-
       let startDragPosX = 0;
       let startDragPosY = 0;
       let lastCreatedNode;
+      let mouseX = 0;
+      let mouseY = 0;
+      let clickedBackgroundPosition = { x: 0, y: 0 };
+      let isDraggingBackground = false;
+      let offsetXBackground = 0;
+      let offsetYBackground = 0;
+      let isHoldingCtrl = false;
+      let isHoldingShift = false;
+      let isHoldingAlt = false;
 
       function main() {}
 
@@ -242,12 +250,6 @@
       };
 
       function createNode(text, x, y, generatedByLLM = false) {
-        // const node = document.createElement("div");
-        // node.classList.add("node");
-        // node.textContent = text;
-        // node.style.left = x + "px";
-        // node.style.top = y + "px";
-        // document.body.appendChild(node);
         const node = document.createElement("div");
         node.classList.add("node");
         node.textContent = text;
@@ -281,7 +283,12 @@
           sendToLLM(node);
         });
 
-        node.addEventListener("pointerdown", (e) => startDrag(e, node));
+        node.addEventListener("pointerdown", (e) => {
+          if (isHoldingCtrl || isHoldingShift) {
+            return;
+          }
+          startDrag(e, node);
+        });
 
         if (activeNodes.length > 0) {
           activeNodes.forEach((activeNode) => {
@@ -298,8 +305,7 @@
       }
 
       function sendToLLM(node) {
-  
-        const nodePosition = getNodePosition(node)
+        const nodePosition = getNodePosition(node);
 
         let promptForLLM = "[";
 
@@ -327,28 +333,13 @@
             const resonesNodeTexts = data["response"];
 
             for (let i = 0; i < resonesNodeTexts.length; i++) {
-              createNode(resonesNodeTexts[i], nodePosition.x  + i * 200 - 200, nodePosition.y + NODE_OFFSET_Y / 2, true);
+              createNode(
+                resonesNodeTexts[i],
+                nodePosition.x + i * 200 - 200,
+                nodePosition.y + NODE_OFFSET_Y / 2,
+                true
+              );
             }
-
-            // const centerOffset = 200; // distance from center for each additional response
-            // const numResponses = resonesNodeTexts.length;
-
-            // for (let i = 0; i < numResponses; i++) {
-            //   let xOffset;
-
-            //   if (numResponses === 1) {
-            //     // Center if only one response
-            //     xOffset = 0;
-            //   } else if (numResponses % 2 === 1) {
-            //     // For odd numbers, center the middle response
-            //     xOffset = (i - Math.floor(numResponses / 2)) * centerOffset;
-            //   } else {
-            //     // For even numbers, center around the middle, split evenly
-            //     xOffset = (i - (numResponses / 2 - 0.5)) * centerOffset;
-            //   }
-
-            //   createNode(resonesNodeTexts[i], nodePosition.x + xOffset, nodePosition.y + NODE_OFFSET_Y/2, true);
-            // }
           })
           .catch((error) => {
             console.error("Error:", error);
@@ -360,7 +351,7 @@
       }
 
       function setActiveNode(node) {
-        if (isHoldingCtrlOrShift === false) {
+        if (isHoldingCtrl === false && isHoldingShift === false) {
           activeNodes.forEach((activeNode) =>
             activeNode.classList.remove("active")
           );
@@ -373,7 +364,7 @@
 
       function makeParent(parentNode, childNode) {
         const line = document.createElement("div");
-        console.log("line", line);
+        // console.log("line", line);
         line.classList.add("line");
         document.body.appendChild(line);
         updateLine(line, parentNode, childNode);
@@ -420,11 +411,14 @@
 
         node.style.cursor = "grabbing";
         setActiveNode(node);
-          document.addEventListener("pointermove", onDrag);
-          document.addEventListener("pointerup", stopDrag);
+        document.addEventListener("pointermove", onDrag);
+        document.addEventListener("pointerup", stopDrag);
       }
 
       function onDrag(event) {
+        if (isHoldingCtrl || isHoldingShift) {
+          return;
+        }
         if (isDragging && draggedNode) {
           let offsetX = event.clientX - startDragPosX;
           let offsetY = event.clientY - startDragPosY;
@@ -470,26 +464,18 @@
           draggedNode.style.cursor = "pointer";
         }
         draggedNode = null;
-          document.removeEventListener("pointermove", onDrag);
-          document.removeEventListener("pointerup", stopDrag);
+        document.removeEventListener("pointermove", onDrag);
+        document.removeEventListener("pointerup", stopDrag);
       }
 
-      let isHoldingCtrlOrShift = false;
-      let isHoldingAlt = false;
 
 
-    function getNodePosition(node) {
+      function getNodePosition(node) {
         const boundingBox = node.getBoundingClientRect();
-
-        // Calculate the center position
-        const x = boundingBox.left + boundingBox.width/2;
-        const y = boundingBox.top + boundingBox.height/2;
-
-        console.log("getNodePosition",x,y);
-
-        // Return both values as an object
+        const x = boundingBox.left + boundingBox.width / 2;
+        const y = boundingBox.top + boundingBox.height / 2;
         return { x, y };
-    }
+      }
 
       document.addEventListener("keydown", function (event) {
         const promptTxtBox = document.querySelector("#promptTxt");
@@ -504,21 +490,22 @@
 
           promptTxtBox.value = "";
 
-
-          let pos = {x:0,y:0};
+          let pos = { x: 0, y: 0 };
 
           if (activeNodes[0]) {
             pos = getNodePosition(activeNodes[0]);
           } else if (lastCreatedNode) {
-              pos = getNodePosition(lastCreatedNode);
+            pos = getNodePosition(lastCreatedNode);
           } else {
-            pos.x =  window.innerWidth / 2;
+            pos.x = window.innerWidth / 2;
           }
           pos.y += NODE_OFFSET_Y;
 
           createNode(inputText, pos.x, pos.y);
-        } else if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = true;
+        } else if (event.key === "Control") {
+          isHoldingCtrl = true;
+        } else if (event.key === "Shift") {
+          isHoldingShift = true;
         } else if (event.key === "Alt") {
           isHoldingAlt = true;
         } else if (event.key === "Delete") {
@@ -542,26 +529,21 @@
           });
           activeNodes = [];
         } else {
-          console.log(event.key);
         }
       });
       document.addEventListener("keyup", function (event) {
-        if (event.key === "Control" || event.key === "Shift") {
-          isHoldingCtrlOrShift = false;
+        if (event.key === "Control") {
+          isHoldingCtrl = false;
+        } else if (event.key === "Shift") {
+          isHoldingShift = false;
         } else if (event.key === "Alt") {
           isHoldingAlt = false;
         }
       });
 
-      let clickedBackgroundPosition = { x: 0, y: 0 };
-
-      let isDraggingBackground = false;
-      let offsetXBackground = 0,
-        offsetYBackground = 0;
-
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
-          if (isHoldingCtrlOrShift === false) {
+          if (isHoldingCtrl === false && isHoldingShift == false) {
             activeNodes.forEach((activeNode) =>
               activeNode.classList.remove("active")
             );
@@ -569,14 +551,10 @@
           }
 
           isDraggingBackground = true;
-
           clickedBackgroundPosition.x = event.clientX;
           clickedBackgroundPosition.y = event.clientY;
         }
       });
-
-      let mouseX = 0;
-      let mouseY = 0;
 
       document.addEventListener("pointermove", function (event) {
         mouseX = event.clientX;
