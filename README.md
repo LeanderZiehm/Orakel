@@ -47,3 +47,28 @@ run in development with `python3 app.py`
 ---
 
 Built in B4Y3RW4LD Hackathon.
+
+
+
+
+
+We might use json like:
+
+{
+  "graph": {
+    "nodes": {
+      "nodeID1" : {
+
+        "x": 1,
+        "y": 1,
+        "text": "Alice"
+      },
+      "nodeID2":{
+       "x": 1,
+        "y": 1,
+        "text": "Bob"
+      }
+    },
+    "edges": [["nodeID1","nodeID2","parent"]]
+  }
+}
