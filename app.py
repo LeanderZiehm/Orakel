@@ -51,7 +51,7 @@ Only list items that directly answer the question"""
     print(f"User:{user_message}")
 
     if modelName == "None":
-        return jsonify({"response": [user_message]})
+        return jsonify({"response": ["response1", "response2", "response3"]})
 
     response = ollama.chat(model=modelName, messages=[{"role": "user", "content": promptContent}])
     # print(response['message']['content'])

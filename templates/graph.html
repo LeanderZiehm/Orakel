@@ -272,6 +272,8 @@
         });
 
         node.addEventListener("resize", () => {
+
+          console.log("resize");
           if (node.lines) {
             node.lines.forEach((lineContainer) => {
               updateLine(lineContainer.line, node, lineContainer.target);
@@ -309,7 +311,7 @@
         uid += 1;
         let new_node = {
           id: uid,
-          payload: text,
+          payload: content,
           left: nodeX,
           top: nodeY,
         };
@@ -626,8 +628,10 @@
 
           let pos = { x: 0, y: 0 };
 
-          if (memory[0]) {
-            pos = getNodePosition(memory[0]);
+          console.log("memory",memory);
+
+          if (activeNode) {
+            pos = getNodePosition(activeNode);
           } else if (lastCreatedNode) {
             pos = getNodePosition(lastCreatedNode);
           } else {
