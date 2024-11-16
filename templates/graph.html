@@ -51,16 +51,17 @@
         background-color: rgb(0, 255, 247) !important;
       }
 
-      .node.memorized {
+      .node.contexted {
         background-color: rgb(0, 38, 255);
       }
 
       .line {
         position: absolute;
         height: 2px;
-        background-color: black;
+        background: linear-gradient(135deg, #6a11cb, #ff00c8);
         transform-origin: 0 50%;
-        z-index: -1;
+        /* z-index: -1; */
+        z-index: 100;
       }
 
       .line-memory {
@@ -122,6 +123,42 @@
         background-color: #343434;
         color: #f0f0f0;
       }
+
+      /* Container for the node list */
+      .node-list-container {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        max-width: 400px;
+      }
+
+      /* Each node item */
+      .node-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: black;
+        color: white;
+        padding: 5px 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+      }
+
+      /* Text within each node */
+      .node-text {
+        flex: 1;
+        padding-right: 10px;
+      }
+
+      /* Delete button */
+      .node-delete-btn {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 18px;
+        padding: 0 5px;
+      }
     </style>
   </head>
 
@@ -166,7 +203,7 @@
             style="list-style-type: none; padding: 0"
           ></ul>
         </div>
-        <button onclick="clearNodes()">Clear</button>
+        <!-- <button onclick="clearNodes()">Clear</button> -->
         <button onclick="dumpState()">Dump State</button>
         <button onclick="renderState()">Render State [PNG]</button>
       </div>
@@ -177,8 +214,10 @@
       let nodes = []; // The nodes that are currently on the screen
       let edges = {};
       let activeNode = null; // The node that is currently selected
+      let activeNodes = []; // The node that is currently selected
 
-      let memory = []; // The nodes + type that are in the context state
+      // let memory = []; // The nodes + type that are in the context state
+      let context = []; // The nodes + type that are in the context state
       let isDragging = false;
       let draggedNode = null;
       let startDragPosX = 0;
@@ -234,31 +273,93 @@
         window.location = file;
       }
 
-      function createNode(
-        content,
-        x,
-        y,
-        generatedByLLM = false,
-        isImage = false
-      ) {
+      function singleSelect(node) {
+        activeNodes.forEach((activeNode) =>
+          activeNode.classList.remove("active")
+        );
+        activeNodes = [];
+        node.classList.add("active");
+        activeNodes.push(node);
+      }
+
+      function multiSelect(node) {
+        node.activeNodes.push(node);
+        activeNodes.push(node);
+      }
+
+      function toggleContext(node) {
+        if (node.classList.contains("contexted")) {
+          node.classList.remove("contexted");
+          context = context.filter((contextNode) => node !== contextNode);
+        } else {
+          node.classList.add("contexted");
+          context.push(node);
+        }
+        updateNodeList();
+      }
+
+      // function clearNodes() {
+      //     // memory.forEach((node) => setMemorizedNode(node));
+      //     context = [];
+      //     updateNodeList();
+      //   }
+
+      function removeNodeFromMemory(node) {
+        context = context.filter((memoryNode) => memoryNode !== node);
+        setMemorizedNode(node);
+        updateNodeList();
+      }
+
+      function addToContext(node) {
+        node.classList.add("contexted");
+        context.push(node);
+        updateNodeList();
+      }
+
+      function setMemorizedNode(node) {
+        node.classList.toggle("contexted");
+        node.classList.remove("active");
+      }
+
+      function updateState(text, left, top) {
+        /*
+          update the state at this point so that the
+          nodes created by the LLM is aware of this node as well
+
+          control-flow:
+          1. create instance of this Node
+          2. add it to state
+          3. computcontenthe edges
+          4. addnodeXes to the state
+        */
+        uid += 1;
+        const new_node = {
+          id: uid,
+          payload: text,
+          left: left,
+          top: top,
+        };
+        state.nodes.push(new_node);
+
+        const parents = document.getElementsByClassName("node active");
+        if (parents.length > 0) {
+          let parent_ids = [];
+          for (let i = 0; i < parents.length; i++) {
+            parent_ids.push(parents[i].dataset.nodeId);
+          }
+
+          state.edges.push({
+            self: uid,
+            parents: parent_ids,
+          });
+        }
+      }
+
+      function createNode(text, x, y, createdByLLM = false) {
+        // create and append the node
         const node = document.createElement("div");
         node.classList.add("node");
-
-        if (isImage) {
-          // Create an image element if isImage is true
-          const img = document.createElement("img");
-          img.src = `data:image/png;base64,${content}`; // Set the source of the image to content
-          // img.alt = "Node image"; // Optionally add alt text
-          img.maxWidth = "300px";
-          img.draggable = false;
-          img.style.userSelect = "none";
-          // img.classList.add("node-image"); // Optional class for styling
-          node.appendChild(img); // Append image to the node
-        } else {
-          // Set text content if isImage is false
-          node.textContent = content;
-        }
-
+        node.textContent = text;
         document.body.appendChild(node);
 
         const boundingBox = node.getBoundingClientRect();
@@ -269,20 +370,18 @@
         node.style.top = nodeY + "px";
 
         node.addEventListener("dblclick", () => {
-          if (node.classList.contains("memorized")) {
-            node.classList.remove("memorized");
-            memory = memory.filter((memoryNode) => memoryNode !== node);
-          } else {
-            setMemorizedNode(node);
-            memory.push(node);
-          }
-          updateNodeList();
+          toggleContext(node);
         });
 
         node.addEventListener("click", () => {
-          if (isDragging === false) {
-            setActiveNode(node);
+          if (isHoldingShift) {
+            multiSelect(node);
+          } else {
+            singleSelect(node);
           }
+          // if (isDragging === false) {
+          //   setActiveNode(node);
+          // }
         });
 
         node.addEventListener("pointerdown", (e) => {
@@ -292,127 +391,44 @@
           startDrag(e, node);
         });
 
-        node.addEventListener("resize", () => {
-
-          console.log("resize");
-          if (node.lines) {
-            node.lines.forEach((lineContainer) => {
-              updateLine(lineContainer.line, node, lineContainer.target);
-            });
-          }
-          if (isImage) {
-            //resize image to fit the node
-            const img = node.querySelector("img");
-            img.style.width = "100%";
-            img.style.height = "100%";
-          }
-        });
-
-        if (memory.length > 0) {
-          memory.forEach((_node) => {
-            makeParent(_node, node, true);
-          });
-        }
-        if (activeNode) {
-          makeParent(activeNode, node, false);
+        if (activeNodes[0]) {
+          createLineParent(activeNodes[0], node, false);
         }
         nodes.push(node);
         lastCreatedNode = node;
 
-        /*
-          update the state at this point so that the
-          nodes created by the LLM is aware of this node as well
+        updateState(text, x, y);
 
-          control-flow:
-          1. create instance of this Node
-          2. add it to state
-          3. compute all the edges
-          4. add edges to the state
-        */
-        uid += 1;
-        let new_node = {
-          id: uid,
-          payload: content,
-          left: nodeX,
-          top: nodeY,
-        };
-        state.nodes.push(new_node);
-        node.dataset.nodeId = uid;
-
-        const parents = document.getElementsByClassName("node active");
-
-        if (parents.length > 0) {
-          let parent_ids = [];
-          for (let i = 0; i < parents.length; i++) {
-            parent_ids.push(parents[i].dataset.nodeId);
-          }
-          state.edges.push({
-            self: uid,
-            parents: parent_ids,
-          });
+        if (createdByLLM) {
+          return;
         }
 
-        if (generatedByLLM === false) {
-          setActiveNode(node);
-        }
-      }
-
-      function main() {}
-
-      function dumpState() {
-        console.log(state);
-
-        //from: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
-        const dataURI =
-          "data:text/json;charset=utf-8," +
-          encodeURIComponent(JSON.stringify(state, null, 2));
-        const downloadElem = document.createElement("a");
-        downloadElem.setAttribute("href", dataURI);
-        downloadElem.setAttribute("download", "state.json");
-        document.body.appendChild(downloadElem);
-        downloadElem.click();
-        downloadElem.remove();
-      }
-
-      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
-      uploadTxtBtn.addEventListener("click", function () {
-        const [fileToUpload] = document.querySelector("#fileToUpload").files;
-
-        const reader = new FileReader();
-        reader.addEventListener("load", function () {
-          const fileContent = reader.result;
-          createNode(fileContent, mouseX, mouseY);
+        context.forEach((_node) => {
+          createLineParent(_node, node, true);
         });
 
-        if (fileToUpload) {
-          reader.readAsText(fileToUpload);
-        }
-      });
+        node.dataset.userNode = "true";
+
+        sendToLLM(node);
+        addToContext(node);
+        singleSelect(node);
+      }
 
       function updateNodeList() {
         const nodeListContainer = document.getElementById("nodeListContainer");
-        nodeListContainer.innerHTML = "";
+        nodeListContainer.innerHTML = ""; // Clear existing items
 
-        memory.forEach((node, index) => {
+        context.forEach((node) => {
           const listItem = document.createElement("li");
-          listItem.style.display = "flex";
-          listItem.style.justifyContent = "space-between";
-          listItem.style.alignItems = "center";
-          listItem.style.backgroundColor = "black";
-          listItem.style.color = "white";
-          listItem.style.padding = "5px 10px";
-          listItem.style.marginBottom = "5px";
-          listItem.style.borderRadius = "5px";
+          listItem.classList.add("node-list-item");
 
           const nodeText = document.createElement("span");
+          nodeText.classList.add("node-text");
           nodeText.textContent = node.textContent;
 
           const deleteButton = document.createElement("button");
+          deleteButton.classList.add("node-delete-btn");
           deleteButton.innerHTML = "&#10006;";
-          deleteButton.style.background = "none";
-          deleteButton.style.border = "none";
-          deleteButton.style.color = "white";
-          deleteButton.style.cursor = "pointer";
           deleteButton.addEventListener("click", () =>
             removeNodeFromMemory(node)
           );
@@ -423,22 +439,39 @@
         });
       }
 
-      function clearNodes() {
-        memory.forEach((node) => setMemorizedNode(node));
-        memory = [];
-        updateNodeList();
-      }
+      // function updateNodeList() {
+      //   const nodeListContainer = document.getElementById("nodeListContainer");
+      //   nodeListContainer.innerHTML = "";
 
-      function removeNodeFromMemory(node) {
-        memory = memory.filter((memoryNode) => memoryNode !== node);
-        setMemorizedNode(node);
-        updateNodeList();
-      }
+      //   context.forEach((node, index) => {
+      //     const listItem = document.createElement("li");
+      //     listItem.style.display = "flex";
+      //     listItem.style.justifyContent = "space-between";
+      //     listItem.style.alignItems = "center";
+      //     listItem.style.backgroundColor = "black";
+      //     listItem.style.color = "white";
+      //     listItem.style.padding = "5px 10px";
+      //     listItem.style.marginBottom = "5px";
+      //     listItem.style.borderRadius = "5px";
 
-      memory.push = function () {
-        Array.prototype.push.apply(this, arguments);
-        updateNodeList();
-      };
+      //     const nodeText = document.createElement("span");
+      //     nodeText.textContent = node.textContent;
+
+      //     const deleteButton = document.createElement("button");
+      //     deleteButton.innerHTML = "&#10006;";
+      //     deleteButton.style.background = "none";
+      //     deleteButton.style.border = "none";
+      //     deleteButton.style.color = "white";
+      //     deleteButton.style.cursor = "pointer";
+      //     deleteButton.addEventListener("click", () =>
+      //       removeNodeFromMemory(node)
+      //     );
+
+      //     listItem.appendChild(nodeText);
+      //     listItem.appendChild(deleteButton);
+      //     nodeListContainer.appendChild(listItem);
+      //   });
+      // }
 
       function sendToLLM(node) {
         let x = 0,
@@ -457,13 +490,13 @@
 
         let promptForLLM = "[";
 
-        for (let i = 0; i < memory.length; i++) {
+        for (let i = 0; i < context.length; i++) {
           promptForLLM += `${nodeText}`;
 
-          if (i < memory.length - 1) {
+          if (i < context.length - 1) {
             promptForLLM += ",";
           }
-          if (i === memory.length - 1) {
+          if (i === context.length - 1) {
             promptForLLM += ` connected to `;
           }
         }
@@ -494,39 +527,36 @@
           });
       }
 
-      function setMemorizedNode(node) {
-        node.classList.toggle("memorized");
-        node.classList.remove("active");
+      document.addEventListener("pointermove", onDrag);
+      document.addEventListener("pointerup", stopDrag);
+
+      function startDrag(event, node) {
+        isDragging = true;
+        draggedNode = node;
+        startDragPosX = event.clientX;
+        startDragPosY = event.clientY;
+
+        node.style.cursor = "grabbing";
       }
 
-      function unsetActiveNode(node) {
-        if (node) {
-          node.classList.remove("active");
+      function stopDrag() {
+        isDragging = false;
+        if (draggedNode) {
+          draggedNode.style.cursor = "pointer";
         }
+        draggedNode = null;
       }
 
-      function setActiveNode(node) {
-        activeNode = node;
-
-        nodes.forEach((_node) => {
-          _node.classList.remove("active");
-        });
-        // if (isHoldingCtrl === false && isHoldingShift === false) {
-        //   activeNodes.forEach((activeNode) =>
-        //     activeNode.classList.remove("active")
-        //   );
-        //   activeNodes = [];
-        // }
-        // activeNodes.push(node);
-
-        node.classList.add("active");
-      }
-
-      function makeParent(parentNode, childNode, isMemoryNode = false) {
+      function createLineParent(
+        parentNode,
+        childNode,
+        isCreatedByUser = false
+      ) {
         const line = document.createElement("div");
-        line.classList.add(isMemoryNode ? "line-memory" : "line");
+        line.classList.add("line");
         document.body.appendChild(line);
-        updateLine(line, parentNode, childNode);
+        // updateLine(line, parentNode, childNode);
+        // TODO ADD BACK IN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         parentNode.lines = parentNode.lines || [];
         childNode.lines = childNode.lines || [];
@@ -540,91 +570,101 @@
           target: parentNode,
           type: "targetIsParent",
         });
+
+        updateLines(parentNode);
+        updateLines(childNode);
       }
 
-      function updateLine(line, node1, node2) {
+      function onDrag(event) {
+        if (isHoldingCtrl || isHoldingShift) {
+          // because now user wants to resize the window
+          return;
+        }
+
+        if (!isDragging || !draggedNode) {
+          return;
+        }
+
+        let offsetX = event.clientX - startDragPosX;
+        let offsetY = event.clientY - startDragPosY;
+
+        startDragPosX = event.clientX;
+        startDragPosY = event.clientY;
+
+        const x = draggedNode.getBoundingClientRect().left + offsetX;
+        const y = draggedNode.getBoundingClientRect().top + offsetY;
+        draggedNode.style.left = `${x}px`;
+        draggedNode.style.top = `${y}px`;
+
+        draggedNode.lines.forEach((lineContainer) => {
+          if (
+            !isHoldingAlt &&
+            lineContainer.type == "targetIsChild" &&
+            lineContainer.target.dataset.userNode !== "true"
+          ) {
+            const child = lineContainer.target;
+            const x = child.getBoundingClientRect().left + offsetX;
+            const y = child.getBoundingClientRect().top + offsetY;
+            child.style.left = `${x}px`;
+            child.style.top = `${y}px`;
+            updateLines(child);
+          }
+
+          // updateLine(lineContainer.line, draggedNode, lineContainer.target);
+          updateLine(lineContainer, draggedNode, lineContainer.target);
+        });
+      }
+
+      function updateLine(lineContainer, node1, node2) {
+        const line = lineContainer.line;
+
+        if (lineContainer.type == "targetIsParent") {
+          node0 = node2;
+          node2 = node1;
+          node1 = node0;
+        }
+
         const node1Pos = node1.getBoundingClientRect();
         const node2Pos = node2.getBoundingClientRect();
 
+        // calculate both ends of the edge-line
         const x1 = node1Pos.left + node1Pos.width / 2;
         const y1 = node1Pos.top + node1Pos.height / 2;
         const x2 = node2Pos.left + node2Pos.width / 2;
         const y2 = node2Pos.top + node2Pos.height / 2;
 
+        if (lineContainer.type == "targetIsParent") {
+          let circle = lineContainer.circle || document.createElement("div");
+
+          circle.style.position = "absolute";
+          circle.style.width = "10px";
+          circle.style.height = "10px";
+          circle.style.borderRadius = "50%";
+          circle.style.backgroundColor = "black";
+          circle.style.zIndex = "100";
+          document.body.appendChild(circle);
+          lineContainer.circle = circle;
+          circle.style.left = `${x2}px`;
+          circle.style.top = `${y2}px`;
+        }
+
+      
         const dx = x2 - x1;
         const dy = y2 - y1;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
+        // create the edge-line
         line.style.width = `${distance}px`;
         line.style.left = `${x1}px`;
         line.style.top = `${y1}px`;
         line.style.transform = `rotate(${angle}deg)`;
       }
 
-      function startDrag(event, node) {
-        isDragging = true;
-        draggedNode = node;
-        startDragPosX = event.clientX;
-        startDragPosY = event.clientY;
-
-        node.style.cursor = "grabbing";
-        // setActiveNode(node);
-        document.addEventListener("pointermove", onDrag);
-        document.addEventListener("pointerup", stopDrag);
-      }
-
-      function onDrag(event) {
-        if (isHoldingCtrl || isHoldingShift) {
-          return;
-        }
-        if (isDragging && draggedNode) {
-          let offsetX = event.clientX - startDragPosX;
-          let offsetY = event.clientY - startDragPosY;
-
-          startDragPosX = event.clientX;
-          startDragPosY = event.clientY;
-
-          const x = draggedNode.getBoundingClientRect().left + offsetX;
-          const y = draggedNode.getBoundingClientRect().top + offsetY;
-          draggedNode.style.left = `${x}px`;
-          draggedNode.style.top = `${y}px`;
-
-          if (draggedNode.lines) {
-            draggedNode.lines.forEach((lineContainer) => {
-              if (isHoldingAlt == false) {
-                if (lineContainer.type == "targetIsChild") {
-                  const child = lineContainer.target;
-
-                  const x = child.getBoundingClientRect().left + offsetX;
-                  const y = child.getBoundingClientRect().top + offsetY;
-                  child.style.left = `${x}px`;
-                  child.style.top = `${y}px`;
-
-                  updateLines(child);
-                }
-              }
-
-              updateLine(lineContainer.line, draggedNode, lineContainer.target);
-            });
-          }
-        }
-      }
-
       function updateLines(node) {
         node.lines.forEach((lineContainer) => {
-          updateLine(lineContainer.line, node, lineContainer.target);
+          updateLine(lineContainer, node, lineContainer.target);
         });
-      }
-
-      function stopDrag() {
-        isDragging = false;
-        if (draggedNode) {
-          draggedNode.style.cursor = "pointer";
-        }
-        draggedNode = null;
-        document.removeEventListener("pointermove", onDrag);
-        document.removeEventListener("pointerup", stopDrag);
       }
 
       function getNodePosition(node) {
@@ -640,18 +680,12 @@
 
         if (event.key === "Enter") {
           const inputText = promptTxtBox.value;
-
-          if (inputText.trim() == "") {
-            return;
-          }
           promptTxtBox.value = "";
 
           let pos = { x: 0, y: 0 };
 
-          console.log("memory",memory);
-
-          if (activeNode) {
-            pos = getNodePosition(activeNode);
+          if (activeNodes[0]) {
+            pos = getNodePosition(activeNodes[0]);
           } else if (lastCreatedNode) {
             pos = getNodePosition(lastCreatedNode);
           } else {
@@ -659,45 +693,7 @@
           }
           pos.y += NODE_OFFSET_Y;
 
-          if (inputText.startsWith("/image")) {
-            // Get the rest of the input after "/image"
-            const imageRequestData = inputText.slice(6).trim(); // Remove "/image" and any leading space
-
-            // Create the request payload (you may want to customize this based on your API needs)
-            const requestPayload = {
-              data: imageRequestData, // You can modify this based on the API
-            };
-
-            // Send a POST request to the /image endpoint
-            fetch("/image", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(requestPayload),
-            })
-              .then((response) => response.json()) // Parse JSON from the response
-              .then((data) => {
-                // Check if the image_base64 field exists in the response
-                if (data.image_base64) {
-                  createNode(data.image_base64, pos.x, pos.y, false, true);
-                  // Display the image using the base64 data
-                  // const imgElement = document.createElement("img");
-                  // imgElement.src = `data:image/png;base64,${data.image_base64}`;
-                  // document.body.appendChild(imgElement); // Append the image to the body (or another container)
-                } else {
-                  console.error("No image_base64 field found in the response.");
-                }
-              })
-              .catch((error) => {
-                console.error("Error fetching image:", error);
-              });
-
-            return;
-          }
-
           createNode(inputText, pos.x, pos.y);
-          sendToLLM(activeNode);
         } else if (event.key === "Control") {
           isHoldingCtrl = true;
         } else if (event.key === "Shift") {
@@ -705,29 +701,20 @@
         } else if (event.key === "Alt") {
           isHoldingAlt = true;
         } else if (event.key === "Delete") {
-          nodes.forEach((node) => {
-            if (node.lines) {
+          activeNodes.forEach((node) => {
+            node.lines &&
               node.lines.forEach((lineContainer) => {
                 lineContainer.line.remove();
-
-                if (lineContainer.target.lines) {
-                  lineContainer.target.lines =
-                    lineContainer.target.lines.filter(
-                      (connection) => connection.target !== node
-                    );
-                }
               });
-            }
-
-            nodes = nodes.filter((existingNode) => existingNode !== node);
 
             node.remove();
           });
-          nodes = [];
+          activeNodes = [];
         } else {
           return;
         }
       });
+
       document.addEventListener("keyup", function (event) {
         if (event.key === "Control") {
           isHoldingCtrl = false;
@@ -750,31 +737,40 @@
         }
       });
 
-      document.addEventListener("pointermove", function (event) {
-        mouseX = event.clientX;
-        mouseY = event.clientY;
-        if (isDraggingBackground) {
-          const diffX = event.clientX - clickedBackgroundPosition.x;
-          const diffY = event.clientY - clickedBackgroundPosition.y;
-          nodes.forEach((_node) => {
-            _node.style.left = `${parseInt(_node.style.left) + diffX}px`;
-            _node.style.top = `${parseInt(_node.style.top) + diffY}px`;
-            if (_node.lines) {
-              _node.lines.forEach((lineContainer) => {
-                updateLine(lineContainer.line, _node, lineContainer.target);
-              });
-            }
-          });
-
-          clickedBackgroundPosition.x = event.clientX;
-          clickedBackgroundPosition.y = event.clientY;
-        }
-      });
       document.addEventListener("pointerup", function (event) {
         isDraggingBackground = false;
       });
 
-      main();
+      const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
+      uploadTxtBtn.addEventListener("click", function () {
+        const [fileToUpload] = document.querySelector("#fileToUpload").files;
+
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          const fileContent = reader.result;
+          createNode(fileContent, mouseX, mouseY);
+        });
+
+        if (fileToUpload) {
+          reader.readAsText(fileToUpload);
+        }
+      });
+
+      function dumpState() {
+        //from: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
+        const dataURI =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(state, null, 2));
+
+        const downloadElem = document.createElement("a");
+        downloadElem.setAttribute("href", dataURI);
+        downloadElem.setAttribute("download", "state.json");
+
+        document.body.appendChild(downloadElem);
+
+        downloadElem.click(); // programatically click the element
+        downloadElem.remove();
+      }
     </script>
   </body>
 </html>
