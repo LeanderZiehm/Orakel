@@ -44,6 +44,27 @@ run in development with `python3 app.py`
 - frontend: vanillajs, Yes! we raw-dogged it :P
 - backend: flask and ollama library
 
+
+
+### Stack
+
+features working
+
+grab nodes 
+lines updating
+deleting single nodes
+double click to add to context and remove with ui
+multiselect with shift and multi delete
+
+
+not working:
+multi grab
+
+
+
+todo
+
+
 ---
 
 Built in B4Y3RW4LD Hackathon.

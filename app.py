@@ -1,7 +1,7 @@
 import subprocess
 import os
 import json
-from flask import Flask, render_template, request, jsonify, send_file,send_from_directory
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 
 # populate exec env
 env = ""
@@ -9,7 +9,8 @@ if os.path.isfile(".env"):
     f = open(".env")
     env = f.read()
     f.close()
-env = {k: v for k, v in (tuple(t.split("=")) for t in [l for l in env.split()])}
+env = {k: v for k, v in (tuple(t.split("="))
+                         for t in [l for l in env.split()])}
 
 
 modelName = env["MODEL"] if "MODEL" in env else "llama3.1"
@@ -25,12 +26,13 @@ def index():
     return render_template("graph.html")
 
 
-@app.route('/favicon.ico')
+@app.route("/favicon.ico")
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(os.path.join(app.root_path, "static"), "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
 
 i = 0
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -52,13 +54,16 @@ Only list items that directly answer the question"""
         return jsonify({"response": ["response1response1response1", "response2response2response2", "response3response3response3"]})
         # return jsonify({"response": ["response1", "response2", "response3"]})
 
-    response = ollama.chat(model=modelName, messages=[{"role": "user", "content": promptContent}])
+    response = ollama.chat(model=modelName, messages=[
+                           {"role": "user", "content": promptContent}])
     # print(response['message']['content'])
-    chatbot_message = response["message"]["content"]  # f"I got:{user_message}. I give: " + response['message']['content']
+    # f"I got:{user_message}. I give: " + response['message']['content']
+    chatbot_message = response["message"]["content"]
 
     # remove [ and ] and split by comma
     # print(f"Chatbot Message:{chatbot_message}")
-    chatbot_message = chatbot_message.replace('"', "").replace("[", "").replace("]", "")
+    chatbot_message = chatbot_message.replace(
+        '"', "").replace("[", "").replace("]", "")
     items = chatbot_message.split(",")
     print(f"Items:{items}")
     # return jsonify({'response':[chatbot_message]})
@@ -91,7 +96,8 @@ graph happiness {
     #!dangerous: running arbitrary system cmd; but ok for now
     #!-- Birnadin Erick :P
     png = "tmp.png"
-    subprocess.run(["dot", "-Tpng", "tmp.dot", "-o", png], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(["dot", "-Tpng", "tmp.dot", "-o", png],
+                   check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     return send_file(png, mimetype="image/png", as_attachment=True)
 

@@ -209,13 +209,11 @@
     </div>
 
     <script>
+
+      const CREATE_LINES_FOR_CONTEXT_NODES = false;
       const NODE_OFFSET_Y = 150;
       let nodes = []; // The nodes that are currently on the screen
-      let edges = {};
-
       let activeNodes = []; // The node that is currently selected
-
-      // let memory = []; // The nodes + type that are in the context state
       let context = []; // The nodes + type that are in the context state
       let isDragging = false;
       let draggedNode = null;
@@ -366,10 +364,11 @@
       }
 
       function multiSelect(node) {
+        debug("multiSelect");
         activeNodes.push(node);
+        node.classList.add("active");
       }
       // end selection handlers
-
       // node handlers
       function subscribeNodeEvents(node) {
         node.addEventListener("dblclick", () => {
@@ -488,15 +487,8 @@
       }
 
       function setNodePosition(node, x, y) {
-        // const boundingBox = node.getBoundingClientRect();
-        // x +=  boundingBox.width / 2;
-        // y += boundingBox.height / 2;
-
-        // ################ THIS MIGHT BE WRONG ################ !TODO!
-
         node.style.left = `${x}px`;
         node.style.top = `${y}px`;
-
         if (node.lines) {
           node.lines.forEach((lineContainer) => {
             createLine(lineContainer, node, lineContainer.target);
@@ -557,7 +549,6 @@
           nodeListContainer.appendChild(listItem);
         });
       }
-
       function removeNodeFromMemory(node) {
         context = context.filter((contextNode) => contextNode !== node);
 
@@ -567,7 +558,6 @@
         reconstructContextList();
       }
       // end node handlers
-
       // context handlers
       function toggleContext(node) {
         if (node.classList.contains("contexted")) {
@@ -576,27 +566,24 @@
           node.classList.add("contexted");
           context.push(node);
         }
-
         reconstructContextList();
       }
-
       function addToContext(node) {
         node.classList.add("contexted");
         context.push(node);
         reconstructContextList();
       }
       // end context handlers
-
       function getReferencePosition() {
         let pos = { x: 0, y: 0 };
         if (activeNodes[0]) {
           pos.x = getNodePositionX(activeNodes[0]);
           pos.y = getNodePositionY(activeNodes[0]);
-          // debug("activeNodes[0]");
+          // debug(`activeNodes[0]: pos.x: ${pos.x}, pos.y: ${pos.y}`);
         } else if (lastCreatedNode) {
           pos.x = getNodePositionX(lastCreatedNode);
           pos.y = getNodePositionY(lastCreatedNode);
-          // debug("lastCreatedNode");
+          debug(`lastCreatedNode: pos.x: ${pos.x}, pos.y: ${pos.y}`);
         } else {
           pos.x = window.innerWidth / 2;
           pos.y = 0;
@@ -605,22 +592,21 @@
 
         return pos;
       }
-
       // LLM brokers
       function sendToLLM(nodeText) {
         if (nodeText === "") {
           console.error("SendToLLM called with empty text");
           return;
         }
-
         // construct prompt for the backend. the schema is:
         // [ <each node content with csv> connected to <last element> ]
         let promptForLLM = "";
-
+        for (let i = 0; i < activeNodes.length; i++) {
+          promptForLLM += activeNodes[i].textContent + ",\n";
+        }
         for (let i = 0; i < context.length; i++) {
           promptForLLM += context[i].textContent + ",\n";
         }
-
         // promptForLLM += context.slice(0, context.length - 1).join(",");
         // promptForL/LM += ``;
         console.debug("[sendToLLM]: constructed prompt: " + promptForLLM);
@@ -630,7 +616,7 @@
           .then((r) => r.json())
           .then((data) => {
             const texts = data["response"];
-            displayNewNodes(texts);
+            createLLMNodes(texts);
           })
           .catch((error) => {
             console.error(error);
@@ -640,7 +626,6 @@
           });
       }
       // end LLM brokers
-
       // canvas handlers
       function startDrag(event, node) {
         isDragging = true;
@@ -690,8 +675,6 @@
 
         const x = draggedNode.getBoundingClientRect().left + offsetX;
         const y = draggedNode.getBoundingClientRect().top + offsetY;
-        // draggedNode.style.left = `${x}px`;
-        // draggedNode.style.top = `${y}px`;
 
         setNodePosition(draggedNode, x, y);
 
@@ -705,13 +688,7 @@
             const x = child.getBoundingClientRect().left + offsetX;
             const y = child.getBoundingClientRect().top + offsetY;
             setNodePosition(child, x, y);
-            // child.style.left = `${x}px`;
-            // child.style.top = `${y}px`;
-            // createLines(child);
           }
-
-          // updateLine(lineContainer.line, draggedNode, lineContainer.target);
-          // createLine(lineContainer, draggedNode, lineContainer.target);
         });
       }
 
@@ -724,22 +701,24 @@
         let nodeY = referencePosition.y - boundingBox.height / 2;
         nodeY += NODE_OFFSET_Y;
         setNodePosition(newNode, nodeX, nodeY);
-        // newNode.style.left = nodeX + "px";
-        // newNode.style.top = nodeY + "px";
-
         newNode.dataset.userNode = "true";
-
         // join the nodes that are context for the new node
-        context.forEach((_node) => {
-          createLineWithParent(_node, newNode, true);
-        });
+
+
+        if (CREATE_LINES_FOR_CONTEXT_NODES) {
+          context.forEach((_node) => {
+            createLineWithParent(_node, newNode, true);
+          });
+        }
+
+
 
         addToContext(newNode); // default, new user node is in context
         updateState(newNode); // notify state-machine of new changes
         singleSelect(newNode); // default, select the new node
       }
 
-      function displayNewNodes(texts) {
+      function createLLMNodes(texts) {
         const referencePosition = getReferencePosition();
         const createdNodes = [];
         let combinedLength = 0;
@@ -759,19 +738,15 @@
           startX += boundingBox.width + PADDING;
 
           setNodePosition(newNode, startX, startY);
-          // newNode.style.left = `${startX}px`;
-          // newNode.style.top = `${startY}px`;
         });
       }
 
       // end canvas handlers
-
       // event handlers
       function keydownHandler(event) {
         promptTxtBox.focus();
 
         if (event.key === "Enter") {
-          // debug("enter pressed");
           const text = promptTxtBox.value;
           createUserNode(text);
           sendToLLM(text); // infer new node facts
@@ -810,7 +785,13 @@
       function pointerdownHandler(event) {
         if (event.target === document.body) {
           if (isHoldingCtrl === false && isHoldingShift === false) {
-            nodes.forEach((_node) => _node.classList.remove("active"));
+            // nodes.forEach((_node) => _node.classList.remove("active"));
+
+            activeNodes.forEach((activeNode) =>
+              activeNode.classList.remove("active")
+            );
+
+            activeNodes = [];
           }
 
           isDraggingBackground = true;
