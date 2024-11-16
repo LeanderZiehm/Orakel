@@ -1,5 +1,7 @@
+import subprocess
 import os
-from flask import Flask, render_template, request, jsonify
+import json
+from flask import Flask, render_template, request, jsonify, send_file
 from io import BytesIO
 import base64
 from PIL import Image
@@ -116,6 +118,48 @@ def generate():
         else:
             return jsonify({"error": "No prompt provided"}), 400
 
+@app.route("/render", methods=["POST"])
+def renderPNG():
+    dot_file = """
+graph happiness {
+	layout=twopi; graph [ranksep=2];
+"""
+    state = json.loads(request.json.get('state'))
+    nodes = state['nodes']
+    # p -- { children}
+    edges = state['edges']
+
+
+    # graph = {k['id']: [] for k in nodes}
+    # for e in edges:
+    #     child = e['self']
+    #     for p in e['parents']:
+    #         graph[p].append(graph[child])
+    # print(graph)
+
+    nodes_grp = "\n".join(map(lambda n: n['payload'], nodes))
+    dot_file += "\n"
+    dot_file += nodes_grp.replace("[", "").replace("]", "")
+    dot_file += "\n}"
+
+    f = ""
+    try:
+        f = open("tmp.dot", "x")
+    except FileExistsError:
+        f = open("tmp.dot", "w")
+    f.write(dot_file)
+    f.close()
+
+    #!dangerous: running arbitrary system cmd; but ok for now
+    #!-- Birnadin Erick :P
+    png = 'tmp.png'
+    subprocess.run(
+        ["dot", "-Tpng", "tmp.dot", "-o", png],
+        check=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+    return send_file(png,mimetype="image/png", as_attachment=True)
 
 if __name__ == "__main__":
     PORT = int(env["PORT"]) if "PORT" in env else 5002

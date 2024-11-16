@@ -168,6 +168,7 @@
         </div>
         <button onclick="clearNodes()">Clear</button>
         <button onclick="dumpState()">Dump State</button>
+        <button onclick="renderState()">Render State [PNG]</button>
       </div>
     </div>
 
@@ -219,14 +220,34 @@
         edges: [],
       };
 
-      function createNode(content, x, y, generatedByLLM = false, isImage = false) {
+      async function renderState() {
+        const stateStr = JSON.stringify(state);
+        const res = await fetch("/render", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ state: stateStr }),
+        });
+        const blobURI = await res.blob();
+        const file = window.URL.createObjectURL(blobURI);
+        window.location = file;
+      }
+
+      function createNode(
+        content,
+        x,
+        y,
+        generatedByLLM = false,
+        isImage = false
+      ) {
         const node = document.createElement("div");
         node.classList.add("node");
 
-     if (isImage) {
+        if (isImage) {
           // Create an image element if isImage is true
           const img = document.createElement("img");
-          img.src =  `data:image/png;base64,${content}`; ; // Set the source of the image to content
+          img.src = `data:image/png;base64,${content}`; // Set the source of the image to content
           // img.alt = "Node image"; // Optionally add alt text
           img.maxWidth = "300px";
           img.draggable = false;
@@ -237,7 +258,7 @@
           // Set text content if isImage is false
           node.textContent = content;
         }
-       
+
         document.body.appendChild(node);
 
         const boundingBox = node.getBoundingClientRect();
@@ -279,8 +300,8 @@
               updateLine(lineContainer.line, node, lineContainer.target);
             });
           }
-          if(isImage) {
-           //resize image to fit the node
+          if (isImage) {
+            //resize image to fit the node
             const img = node.querySelector("img");
             img.style.width = "100%";
             img.style.height = "100%";
@@ -625,7 +646,6 @@
           }
           promptTxtBox.value = "";
 
-
           let pos = { x: 0, y: 0 };
 
           console.log("memory",memory);
@@ -639,8 +659,7 @@
           }
           pos.y += NODE_OFFSET_Y;
 
-
-       if (inputText.startsWith("/image")) {
+          if (inputText.startsWith("/image")) {
             // Get the rest of the input after "/image"
             const imageRequestData = inputText.slice(6).trim(); // Remove "/image" and any leading space
 
@@ -657,12 +676,11 @@
               },
               body: JSON.stringify(requestPayload),
             })
-              .then(response => response.json()) // Parse JSON from the response
-              .then(data => {
+              .then((response) => response.json()) // Parse JSON from the response
+              .then((data) => {
                 // Check if the image_base64 field exists in the response
                 if (data.image_base64) {
-
-                  createNode(data.image_base64, pos.x, pos.y,false,true);
+                  createNode(data.image_base64, pos.x, pos.y, false, true);
                   // Display the image using the base64 data
                   // const imgElement = document.createElement("img");
                   // imgElement.src = `data:image/png;base64,${data.image_base64}`;
@@ -671,17 +689,12 @@
                   console.error("No image_base64 field found in the response.");
                 }
               })
-              .catch(error => {
+              .catch((error) => {
                 console.error("Error fetching image:", error);
               });
-              
-              return;
-            }
 
-
-
-
-
+            return;
+          }
 
           createNode(inputText, pos.x, pos.y);
           sendToLLM(activeNode);
