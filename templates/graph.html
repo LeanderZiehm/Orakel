@@ -71,7 +71,6 @@
         z-index: -1;
       }
 
-
       .cursor {
         width: 1px;
         height: 20px;
@@ -157,7 +156,7 @@
           border: 1px solid black;
           border-radius: 5px;
           min-width: 200px;
-          z-index: 100;	
+          z-index: 100;
         "
       >
         <h3>Context state</h3>
@@ -174,11 +173,11 @@
 
     <script>
       const NODE_OFFSET_Y = 150;
-      let nodes = [];   // The nodes that are currently on the screen
+      let nodes = []; // The nodes that are currently on the screen
       let edges = {};
       let activeNode = null; // The node that is currently selected
 
-      let memory = [];  // The nodes + type that are in the context state
+      let memory = []; // The nodes + type that are in the context state
       let isDragging = false;
       let draggedNode = null;
       let startDragPosX = 0;
@@ -196,14 +195,14 @@
       let uid = 2003;
 
       /*
-      state machine 
+      state machine
       Node := {
         id: integer, // unique identifier
         payload: string, // content in the node
         top: integer, // top value in style
         left: integer, // left value in style
       };
-      
+
       State := {
         nodes: Array<Node>,
         edges: Arraz<{
@@ -262,13 +261,13 @@
             makeParent(_node, node, true);
           });
         }
-        if(activeNode) {
+        if (activeNode) {
           makeParent(activeNode, node, false);
         }
         nodes.push(node);
         lastCreatedNode = node;
 
-        /* 
+        /*
           update the state at this point so that the
           nodes created by the LLM is aware of this node as well
 
@@ -278,6 +277,28 @@
           3. compute all the edges
           4. add edges to the state
         */
+        uid += 1;
+        let new_node = {
+          id: uid,
+          payload: text,
+          left: nodeX,
+          top: nodeY,
+        };
+        state.nodes.push(new_node);
+        node.dataset.nodeId = uid;
+
+        const parents = document.getElementsByClassName("node active");
+
+        if (parents.length > 0) {
+          let parent_ids = [];
+          for (let i = 0; i < parents.length; i++) {
+            parent_ids.push(parents[i].dataset.nodeId);
+          }
+          state.edges.push({
+            self: uid,
+            parents: parent_ids,
+          });
+        }
 
         if (generatedByLLM === false) {
           setActiveNode(node);
@@ -288,6 +309,17 @@
 
       function dumpState() {
         console.log(state);
+
+        //from: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
+        const dataURI =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(state, null, 2));
+        const downloadElem = document.createElement("a");
+        downloadElem.setAttribute("href", dataURI);
+        downloadElem.setAttribute("download", "state.json");
+        document.body.appendChild(downloadElem);
+        downloadElem.click();
+        downloadElem.remove();
       }
 
       const uploadTxtBtn = document.querySelector("#uploadTxtBtn");
@@ -357,15 +389,17 @@
       };
 
       function sendToLLM(node) {
-        let x = 0, y = 0, nodeText = "";
-        if (node) {         
-            x = parseInt(node.style.left);
-            y = parseInt(node.style.top);
-            nodeText = node.textContent;
+        let x = 0,
+          y = 0,
+          nodeText = "";
+        if (node) {
+          x = parseInt(node.style.left);
+          y = parseInt(node.style.top);
+          nodeText = node.textContent;
         } else {
-            x = 0;
-            y = 0;
-            nodeText = "";
+          x = 0;
+          y = 0;
+          nodeText = "";
         }
         const nodePosition = getNodePosition(node);
 
@@ -414,8 +448,8 @@
       }
 
       function unsetActiveNode(node) {
-        if (node){
-            node.classList.remove("active");
+        if (node) {
+          node.classList.remove("active");
         }
       }
 
@@ -423,7 +457,7 @@
         activeNode = node;
 
         nodes.forEach((_node) => {
-            _node.classList.remove("active");
+          _node.classList.remove("active");
         });
         // if (isHoldingCtrl === false && isHoldingShift === false) {
         //   activeNodes.forEach((activeNode) =>
@@ -438,7 +472,7 @@
 
       function makeParent(parentNode, childNode, isMemoryNode = false) {
         const line = document.createElement("div");
-        line.classList.add(isMemoryNode?"line-memory" : "line");
+        line.classList.add(isMemoryNode ? "line-memory" : "line");
         document.body.appendChild(line);
         updateLine(line, parentNode, childNode);
 
@@ -541,8 +575,6 @@
         document.removeEventListener("pointerup", stopDrag);
       }
 
-
-
       function getNodePosition(node) {
         const boundingBox = node.getBoundingClientRect();
         const x = boundingBox.left + boundingBox.width / 2;
@@ -619,10 +651,7 @@
       document.addEventListener("pointerdown", function (event) {
         if (event.target === document.body) {
           if (isHoldingCtrl === false && isHoldingShift === false) {
-    
-            nodes.forEach((_node) =>
-              _node.classList.remove("active")
-            );
+            nodes.forEach((_node) => _node.classList.remove("active"));
           }
 
           isDraggingBackground = true;
