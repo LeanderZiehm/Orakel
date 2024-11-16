@@ -1,0 +1,152 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  position: relative;
+  user-select: none;
+}
+#contextState{
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background-color: white;
+  padding: 0px 10px 10px 10px;
+  border: 1px solid black;
+  border-radius: 5px;
+  min-width: 200px;
+  z-index: 100;
+}
+
+.node {
+  position: absolute;
+  background-color: red;
+  color: white;
+  font-size: large;
+  font-weight: bold;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  padding: 10px 20px;
+
+  /* clip excess text */
+  max-width: 450px;
+  max-height: 450px;
+  display: -webkit-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-overflow: ellipsis;
+  white-space: normal;
+
+  /* scrolling styles */
+  scrollbar-width: thin;
+  scrollbar-color: white transparent;
+  scroll-behavior: smooth;
+
+  resize: both;
+}
+
+.node.active {
+  background-color: rgb(0, 255, 247) !important;
+}
+
+.node.contexted {
+  background-color: rgb(0, 38, 255);
+}
+
+.line {
+  position: absolute;
+  height: 2px;
+  /* background: linear-gradient(135deg, #8b8989, #f0f0f0); */
+  background-color: black;
+  transform-origin: 0 50%;
+  z-index: -1;
+  /* z-index: 100; */
+}
+
+.line-memory {
+  position: absolute;
+  height: 2px;
+  background-color: rgba(0, 38, 255, 0.37);
+  transform-origin: 0 50%;
+  z-index: -1;
+}
+
+.cursor {
+  width: 1px;
+  height: 20px;
+  background-color: rgb(255, 123, 0);
+  animation: blink 1s step-end infinite;
+  margin-left: 0px;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+#inputs {
+  z-index: 100;
+  position: absolute;
+  bottom: 10px;
+  width: 90%;
+  display: flex;
+}
+
+#promptTxt {
+  padding: 10px 10px;
+  font-size: 26px;
+  font-style: bold;
+  background-color: #343434;
+  color: #f7fff7;
+  width: 100%;
+  flex: none;
+  border-radius: 5px;
+}
+
+/* Container for the node list */
+.node-list-container {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  max-width: 400px;
+}
+
+/* Each node item */
+.node-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: black;
+  color: white;
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+/* Text within each node */
+.node-text {
+  flex: 1;
+  padding-right: 10px;
+}
+
+/* Delete button */
+.node-delete-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+}
