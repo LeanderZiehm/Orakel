@@ -31,14 +31,8 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, "static"), "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
-i = 0
-
-
 @app.route("/chat", methods=["POST"])
 def chat():
-    global i
-    print(i)
-    i += 1
     user_message = request.json.get("message")
 
     systemPrompt = """System: Respond only with a Python array with at least items, following these guidelines:
@@ -52,11 +46,9 @@ Only list items that directly answer the question"""
 
     if modelName == "None":
         return jsonify({"response": ["response1response1response1", "response2response2response2", "response3response3response3"]})
-        # return jsonify({"response": ["response1", "response2", "response3"]})
 
     response = ollama.chat(model=modelName, messages=[
                            {"role": "user", "content": promptContent}])
-    # print(response['message']['content'])
     # f"I got:{user_message}. I give: " + response['message']['content']
     chatbot_message = response["message"]["content"]
 
@@ -66,7 +58,6 @@ Only list items that directly answer the question"""
         '"', "").replace("[", "").replace("]", "")
     items = chatbot_message.split(",")
     print(f"Items:{items}")
-    # return jsonify({'response':[chatbot_message]})
     return jsonify({"response": items})
 
 
