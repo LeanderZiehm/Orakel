@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 **/*.dot
 **/*.png
+node_modules/
