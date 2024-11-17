@@ -34,6 +34,20 @@ run in development with `python3 app.py`
 
 > [!danger] this server is only for development.
 
+### Type-Safety
+
+We have decided to use JSDoc to document the types and Typescript to enforce it
+at runtime. `tsconfig.json` in the root directory is typical setup.
+
+Install typescript transpiler as dev-dependency :
+
+```bash
+pnpm add -D typescript` #if using pnpm (desired)
+npm install -D typescript #if using npm
+```
+
+Now your editor/IDE should provide warnings and errors if you misuse the constructs.
+
 ### Stack
 
 - frontend: vanillajs, Yes! we raw-dogged it :P
@@ -54,9 +68,7 @@ multi grab
 
 todo
 
----
-
-Built in B4Y3RW4LD Hackathon.
+### State
 
 We might use json like:
 
@@ -77,5 +89,8 @@ We might use json like:
     },
     "edges": [["nodeID1","nodeID2","parent"]]
 
-}
-}
+} }
+
+---
+
+Built in B4Y3RW4LD Hackathon.
