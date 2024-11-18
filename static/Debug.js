@@ -25,7 +25,7 @@ function debug(input) {
 
   // for now, we can't print out HTMLElement to debug,
   // thus print it to console instead
-  if (input instanceof HTMLElement) {
+  if (input instanceof Array && input[0] instanceof HTMLElement) {
     console.debug(input);
     return;
   }
