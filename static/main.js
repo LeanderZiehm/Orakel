@@ -1,41 +1,54 @@
-/*
-        creates request with standardized schema
-        method: POST(default), 2nd argumemnt
-        headers: {Content-Type: "apllication/json"}
-        body: json<{message: <message>}>
-      */
+/**
+ * @typedef {{method: string; headers: Object.<string, string>; body: string;}} RequestOptions
+ * @summary Standardized way to construct body
+ */
+
+/**
+  @summary creates request with standardized schema
+  @param {Object} message object that needs to be send to api
+  @param {string} [method="POST"] HTTP method that needs to be made
+  @returns {RequestOptions} an Options object that can be passed to `fetch`
+*/
 function createRequest(message, method = "POST") {
   return {
     method: method,
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify(message),
   };
 }
 
-
 // LLM brokers
-function sendToLLM(nodeText) {
+/**
+ * @function sendToLLM
+ * @summary Send the user prompt to the model along with context and the active nodes
+ * and creates new nodes using {@link createLLMNodes}
+ *
+ * @param {string} nodeText current prompt from the user
+ * @param {Array<HTMLDivElement>} activeNodes nodes with the active state
+ * @param {Array<HTMLDivElement>} context nodes in the contextual memory
+ * @returns {void}
+ */
+function sendToLLM(nodeText, activeNodes, context) {
   if (nodeText === "") {
     console.error("SendToLLM called with empty text");
     return;
   }
-  // construct prompt for the backend. the schema is:
-  // [ <each node content with csv> connected to <last element> ]
+
+  /**
+   * @type {string}
+   * @description construct prompt for the backend. the schema is:
+   * [ <each node content with csv> connected to <last element> ]
+   */
   let promptForLLM = "";
-  for (let i = 0; i < activeNodes.length; i++) {
-    promptForLLM += activeNodes[i].textContent + ",\n";
-  }
-  for (let i = 0; i < context.length; i++) {
-    promptForLLM += context[i].textContent + ",\n";
-  }
-  // promptForLLM += context.slice(0, context.length - 1).join(",");
-  // promptForL/LM += ``;
+  promptForLLM += activeNodes.map((node) => node.textContent).join(",\n");
+  promptForLLM += context.map((node) => node.textContent).join(",\n");
+
   console.debug("[sendToLLM]: constructed prompt: " + promptForLLM);
   debug("[sendToLLM]: constructed prompt: " + promptForLLM);
 
-  fetch("/chat", createRequest(promptForLLM))
+  fetch("/chat", createRequest({ message: promptForLLM }))
     .then((r) => r.json())
     .then((data) => {
       const texts = data["response"];
@@ -49,4 +62,3 @@ function sendToLLM(nodeText) {
     });
 }
 // end LLM brokers
-// canvas handlers
