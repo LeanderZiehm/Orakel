@@ -45,7 +45,6 @@ function sendToLLM(nodeText, activeNodes, context) {
   promptForLLM += activeNodes.map((node) => node.textContent).join(",\n");
   promptForLLM += context.map((node) => node.textContent).join("\n");
 
-  console.debug("[sendToLLM]: constructed prompt: " + promptForLLM);
   debug("[sendToLLM]: constructed prompt: " + promptForLLM);
 
   fetch("/chat", createRequest({ message: promptForLLM }))

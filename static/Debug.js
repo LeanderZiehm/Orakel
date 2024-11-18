@@ -4,7 +4,7 @@ console.log("Debug.js");
 /**@type {HTMLDivElement} */
 let debugContainer;
 
-function main() {
+function initDebug() {
   insertCSS();
 
   /** @global */
@@ -80,4 +80,4 @@ function insertHTML() {
   return debugDiv;
 }
 
-document.addEventListener("DOMContentLoaded", main);
+document.addEventListener("DOMContentLoaded", initDebug);

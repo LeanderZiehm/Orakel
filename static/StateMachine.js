@@ -1,25 +1,32 @@
 // here will be the save and load of the state as json and undo and redo of user actions
 console.log("StateMachine.js");
 
-
+/**@type {HTMLButtonElement} */
+// @ts-ignore
 const btnSaveState = document.getElementById("btnSave");
+
+/**@type {HTMLButtonElement} */
+// @ts-ignore
 const btnSavePNG = document.getElementById("btnSavePNG");
 
 // dumpState
 btnSaveState.addEventListener("click", dumpState);
 btnSavePNG.addEventListener("click", renderState);
 
-
-
+/**@type {Array<HTMLDivElement>} */
 let nodes = []; // The nodes that are currently on the screen
+
+/**@type {Array<HTMLDivElement>} */
 let activeNodes = []; // The node that is currently selected
+
+/**@type {Array<HTMLDivElement>} */
 let context = []; // The nodes + type that are in the context state
+
+/**@type {HTMLDivElement} */
 let lastCreatedNode;
-let uid = 2003;
 
-
-
-
+/**@type {number} */
+let uid = 20241115; // date this project was inaugurated
 
 /*
       ** state machine
@@ -42,12 +49,12 @@ let uid = 2003;
       as it is easier to get all the parents using `activeNodes`
       */
 let state = {
-    nodes: [],
-    edges: [],
+  nodes: [],
+  edges: [],
 };
 
 function updateState(node) {
-    /*
+  /*
             update the state at this point so that the
             nodes created by the LLM is aware of this node as well
   
@@ -57,62 +64,62 @@ function updateState(node) {
             3. computcontenthe edges
             4. addnodeXes to the state
           */
-    //! refactoring
-    return;
-    debug("state: " + JSON.stringify(state, null, 2));
-    const new_node = {
-        id: uid,
-        payload: text,
-        left: left,
-        top: top,
-    };
-    state.nodes.push(new_node);
+  //! refactoring
+  return;
+  debug("state: " + JSON.stringify(state, null, 2));
+  const new_node = {
+    id: uid,
+    payload: text,
+    left: left,
+    top: top,
+  };
+  state.nodes.push(new_node);
 
-    let parents = context;
+  let parents = context;
 
-    if (context.length > 0) {
-        let parent_ids = [];
-        for (let i = 0; i < parents.length; i++) {
-            parent_ids.push(parents[i].dataset.nodeId);
-        }
-
-        state.edges.push({
-            self: uid,
-            parents: parent_ids,
-        });
+  if (context.length > 0) {
+    let parent_ids = [];
+    for (let i = 0; i < parents.length; i++) {
+      parent_ids.push(parents[i].dataset.nodeId);
     }
+
+    state.edges.push({
+      self: uid,
+      parents: parent_ids,
+    });
+  }
 }
 
 async function renderState() {
-    debug("dumping state");
+  debug("dumping state");
 
-    const stateStr = JSON.stringify(state);
-    const res = await fetch("/render", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ state: stateStr }),
-    });
+  const stateStr = JSON.stringify(state);
+  const res = await fetch("/render", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ state: stateStr }),
+  });
 
-    const blobURI = await res.blob();
-    const file = window.URL.createObjectURL(blobURI);
-    window.location = file;
+  const blobURI = await res.blob();
+  const file = window.URL.createObjectURL(blobURI);
+  window.location = file;
 }
 
 function dumpState() {
-    //from: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
-    const dataURI =
-        "data:text/json;charset=utf-8," +
-        encodeURIComponent(JSON.stringify(state, null, 2));
+  //from: https://stackoverflow.com/questions/19721439/download-json-object-as-a-file-from-browser
+  const dataURI =
+    "data:text/json;charset=utf-8," +
+    encodeURIComponent(JSON.stringify(state, null, 2));
 
-    const downloadElem = document.createElement("a");
-    downloadElem.setAttribute("href", dataURI);
-    downloadElem.setAttribute("download", "state.json");
+  const downloadElem = document.createElement("a");
+  downloadElem.setAttribute("href", dataURI);
+  downloadElem.setAttribute("download", "state.json");
 
-    document.body.appendChild(downloadElem);
+  document.body.appendChild(downloadElem);
 
-    downloadElem.click(); // programatically click the element
-    downloadElem.remove();
+  downloadElem.click(); // programatically click the element
+  downloadElem.remove();
 }
 // end - state machine
