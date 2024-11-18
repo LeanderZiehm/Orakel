@@ -32,6 +32,16 @@ function multiSelect(node) {
 }
 // end selection handlers
 // node handlers
+
+/**
+  @description attaches required events to the new node.  following events are subscribed:
+    - toggling context state when _double clicked_
+    - multiselect when _clicked_ **and** holding _shift_
+    - drag trigger when _clicked on_ wwithout holding _strl_ or _shift_
+  
+  @summary subscribes to neccessary events of the node
+ * @param {HTMLDivElement} node node in question
+ */
 function subscribeNodeEvents(node) {
   node.addEventListener("dblclick", () => {
     toggleContext(node);

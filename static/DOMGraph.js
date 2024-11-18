@@ -1,21 +1,32 @@
 // DOM.js handels all the creating and updating of the DOM elements, Nodes and Edges
 console.log("DOMGraph.js");
 
+/**@typedef {{x:number; y:number;}} Position   */
+/**@typedef {"targetIsChild"|"targetIsParent"} OrakelNodeTarget */
+/**@typedef {{line: HTMLDivElement; target: HTMLDivElement; type: OrakelNodeTarget}} OrakelLine */
+/**@typedef {HTMLDivElement & {lines: Array<OrakelLine>;}} OrakelNode */
+/**@typedef {{start: Position; length: number; slant: number;}} OrakelLineMeta */
+
+/**@type {boolean} */
 const CREATE_LINES_FOR_CONTEXT_NODES = false;
+
+/**@type {number} */
 const NODE_OFFSET_Y = 150;
 
 function createUserNode(text) {
   const referencePosition = getReferencePosition();
   const newNode = getNewNode(text);
+
   // Note: screen's top-left is (0,0) / i.e. Origin
   const boundingBox = newNode.getBoundingClientRect();
   let nodeX = referencePosition.x - boundingBox.width / 2;
   let nodeY = referencePosition.y - boundingBox.height / 2;
   nodeY += NODE_OFFSET_Y;
   setNodePosition(newNode, nodeX, nodeY);
-  newNode.dataset.userNode = "true";
-  // join the nodes that are context for the new node
 
+  newNode.dataset.userNode = "true"; // indicate the owner
+
+  // join the nodes that are context for the new node
   if (CREATE_LINES_FOR_CONTEXT_NODES) {
     context.forEach((_node) => {
       createLineWithParent(_node, newNode, true);
@@ -54,20 +65,30 @@ function createLLMNodes(texts) {
   });
 }
 
-// event handlers registration
-
-function getNodePositionX(node) {
+/**
+ * @summary computes the position of a node in x coordinate if
+ * top-left of the screen is (0,0) [origin]
+ * @param {OrakelNode} node inquiring node's position
+ * @returns {Position}
+ */
+function getNodePosition(node) {
   const boundingBox = node.getBoundingClientRect();
-  return boundingBox.left + boundingBox.width / 2;
-}
-function getNodePositionY(node) {
-  const boundingBox = node.getBoundingClientRect();
-  return boundingBox.top + boundingBox.height / 2;
+  return {
+    x: boundingBox.left + boundingBox.width / 2,
+    y: boundingBox.top + boundingBox.height / 2,
+  };
 }
 
+/**
+ * @summary sets the `node` position and updates the lines attached
+ * @param {OrakelNode} node node whose position needs to be set
+ * @param {number} x x position if top-left corner is (0,0)
+ * @param {number} y y position if top-left corner is (0,0)
+ */
 function setNodePosition(node, x, y) {
   node.style.left = `${x}px`;
   node.style.top = `${y}px`;
+
   if (node.lines) {
     node.lines.forEach((lineContainer) => {
       createLine(lineContainer, node, lineContainer.target);
@@ -75,16 +96,26 @@ function setNodePosition(node, x, y) {
   }
 }
 
+/**
+ * @summary creates a div node with included text content and proper
+ * styling depending on who created the node
+ * @param {string} text new node's text content
+ * @param {boolean} createdByLLM flag to indicate who created the node
+ * @returns {OrakelNode}
+ *
+ * @todo write test
+ * @todo refactor param createByLLM
+ */
 function getNewNode(text, createdByLLM = false) {
+  /**@global */
   uid += 1; // for state machine and book keeping
 
   const newNode = document.createElement("div");
-  newNode.classList.add("node");
-  newNode.textContent = text;
-  document.body.appendChild(newNode);
-  newNode.dataset.nodeId = uid;
+  newNode.textContent = text; // text content
+  newNode.classList.add("node"); // proper styling
+  newNode.dataset.nodeId = uid.toString(); // state machine uid
 
-  // calculates new nodes position based on its env
+  document.body.appendChild(newNode);
 
   // if there is an activeNode(s), create a link to that Node
   if (activeNodes[0]) {
@@ -94,14 +125,8 @@ function getNewNode(text, createdByLLM = false) {
   nodes.push(newNode);
   lastCreatedNode = newNode;
 
-  /*
-           attaches required events to the new node.
-           following events are subscribed:
-            - toggling context state when _double clicked_
-            - multiselect when _clicked_ **and** holding _shift_
-            - drag trigger when _clicked on_ wwithout holding _strl_ or _shift_
-          */
   subscribeNodeEvents(newNode);
+
   return newNode;
 }
 
@@ -126,6 +151,7 @@ function reconstructContextList() {
     nodeListContainer.appendChild(listItem);
   });
 }
+
 function removeNodeFromMemory(node) {
   context = context.filter((contextNode) => contextNode !== node);
 
@@ -134,8 +160,7 @@ function removeNodeFromMemory(node) {
 
   reconstructContextList();
 }
-// end node handlers
-// context handlers
+
 function toggleContext(node) {
   if (node.classList.contains("contexted")) {
     removeNodeFromMemory(node);
@@ -145,49 +170,62 @@ function toggleContext(node) {
   }
   reconstructContextList();
 }
+
 function addToContext(node) {
   node.classList.add("contexted");
   context.push(node);
   reconstructContextList();
 }
-// end context handlers
+
+/**
+ * @summary computes starting coordinates of next new node
+ * using either active Nodes or last creation node. consider
+ * top-left corner of the screen as (0,0) [origin] for the plane
+ * @returns {Position}
+ */
 function getReferencePosition() {
-  let pos = { x: 0, y: 0 };
+  /**@type {Position} */
+  let pos;
+
   if (activeNodes[0]) {
-    pos.x = getNodePositionX(activeNodes[0]);
-    pos.y = getNodePositionY(activeNodes[0]);
-    // debug(`activeNodes[0]: pos.x: ${pos.x}, pos.y: ${pos.y}`);
+    pos = getNodePosition(activeNodes[0]);
   } else if (lastCreatedNode) {
-    pos.x = getNodePositionX(lastCreatedNode);
-    pos.y = getNodePositionY(lastCreatedNode);
+    pos = getNodePosition(lastCreatedNode);
     debug(`lastCreatedNode: pos.x: ${pos.x}, pos.y: ${pos.y}`);
   } else {
-    pos.x = window.innerWidth / 2;
-    pos.y = 0;
-    //  debug("else" );
+    pos = { x: window.innerWidth / 2, y: 0 };
   }
 
   return pos;
 }
 
+/**
+ * @summary creates a directed line from `node1` to `node2`
+ * @param {OrakelLine} lineContainer
+ * @param {OrakelNode} node1 start node of the line
+ * @param {OrakelNode} node2 end of the line
+ */
 function createLine(lineContainer, node1, node2) {
   const line = lineContainer.line;
 
   // prevent line flipping during click event
   // keep the vector direction towards the `targetIsChild`
   if (lineContainer.type == "targetIsParent") {
-    node0 = node2;
+    const node0 = node2;
     node2 = node1;
     node1 = node0;
   }
 
   const { start, length, slant } = createLineFromAToB(node1, node2);
+
+  // stylize the line
   line.style.left = `${start.x}px`;
   line.style.top = `${start.y}px`;
   line.style.width = `${length}px`;
   line.style.transform = `rotate(${slant}deg)`;
 
   if (lineContainer.type == "targetIsParent") {
+    /**@todo create arrow head */
     // createArrow(lineContainer)
     // temp: till we find a way to fix arrow head to the box of the Node
   }
@@ -239,6 +277,12 @@ function createArrow(line, base_left, base_top) {
   document.body.appendChild(circle);
 }
 
+/**
+ * @summary computes the metadata need to draw a line from `A` to `B` in a 2D plane
+ * @param {OrakelNode} A one end of the line
+ * @param {OrakelNode} B other end of the line
+ * @returns {OrakelLineMeta}
+ */
 function createLineFromAToB(A, B) {
   const APos = A.getBoundingClientRect();
   const BPos = B.getBoundingClientRect();
@@ -248,8 +292,10 @@ function createLineFromAToB(A, B) {
   const y1 = APos.top + APos.height / 2;
   const x2 = BPos.left + BPos.width / 2;
   const y2 = BPos.top + BPos.height / 2;
+
   const dx = x2 - x1;
   const dy = y2 - y1;
+
   const distance = Math.sqrt(dx * dx + dy * dy);
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 

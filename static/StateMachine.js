@@ -16,13 +16,13 @@ btnSavePNG.addEventListener("click", renderState);
 /**@type {Array<HTMLDivElement>} */
 let nodes = []; // The nodes that are currently on the screen
 
-/**@type {Array<HTMLDivElement>} */
+/**@type {Array<OrakelNode>} */
 let activeNodes = []; // The node that is currently selected
 
-/**@type {Array<HTMLDivElement>} */
+/**@type {Array<OrakelNode>} */
 let context = []; // The nodes + type that are in the context state
 
-/**@type {HTMLDivElement} */
+/**@type {OrakelNode} */
 let lastCreatedNode;
 
 /**@type {number} */
