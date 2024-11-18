@@ -1,53 +1,50 @@
 // Handels all debug related functions like loggin and ui for devs
 console.log("Debug.js");
 
+/**@type {HTMLDivElement} */
+let debugContainer;
 
-let debugDiv;
+function main() {
+  insertCSS();
 
+  /** @global */
+  debugContainer = insertHTML();
 
-
-function main(){
-    insertCSS();
-    insertHTML();
-    debugDiv = document.getElementById("debug");
-    debug("Debugging is enabled");
+  debug("Debugging is enabled");
 }
 
-
-function debugString(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    debugDiv.appendChild(div);
-    // console.log(str);
-}
-
-
+/**
+ * prints the `input` param to the debug window on top-right corner of the page
+ * @template {HTMLElement | string | number} T
+ * @param {string|Object|Array<T>} input string that needs to be print to the debug aread
+ *
+ * @todo write test
+ */
 function debug(input) {
-    if (typeof input === "string") {
-        debugString(input);
-    } else if (typeof input === "object") {
-        debugObject(input);
-    } else if (typeof input === "array") {
-        debugArray(input);
-    }
-    // else {
-    //     debug("Unknown type of input");
-    // }
+  const div = document.createElement("div");
+
+  // for now, we can't print out HTMLElement to debug,
+  // thus print it to console instead
+  if (input instanceof HTMLElement) {
+    console.debug(input);
+    return;
+  }
+
+  // if `input` is not string, make it JSON string
+  div.textContent = typeof input === "string" ? input : JSON.stringify(input);
+
+  /** @global */
+  debugContainer.appendChild(div);
 }
 
-//add a funtion that can take an object and print it in a readable way
-function debugObject(obj){
-    debug(JSON.stringify(obj, null, 2));
-}
-
-function debugArray(arr){
-    debug(JSON.stringify(arr, null, 2));
-}
-
-
-
-function insertCSS(){
-    const cssText = `      #debug {
+/**
+ * @summary creates a style tag and add it to the body. this style tag
+ * is these used to style the {@link debugContainer}
+ *
+ * @returns {void}
+ */
+function insertCSS() {
+  const cssText = `      #debug {
         position: absolute;
         top: 0px;
         right: 0px;
@@ -62,16 +59,25 @@ function insertCSS(){
         overflow-y: auto;
         font-family: monospace;
       }`;
-    const style = document.createElement("style");
-    style.appendChild(document.createTextNode(cssText));
-    document.head.appendChild(style);
-}
-function insertHTML(){
-    const debugDiv = document.createElement("div");
-    debugDiv.id = "debug";
-    document.body.appendChild(debugDiv);
+
+  // append style tag in runtime
+  const style = document.createElement("style");
+  style.appendChild(document.createTextNode(cssText));
+  document.head.appendChild(style);
 }
 
+/**
+ * @summary creates a div node in DOM for debugging purposes
+ * this div is used as an container to be able to log
+ * debug messages without needing to open up console
+ * @returns {HTMLDivElement}
+ */
+function insertHTML() {
+  const debugDiv = document.createElement("div");
+  debugDiv.id = "debug";
+  document.body.appendChild(debugDiv);
 
+  return debugDiv;
+}
 
 document.addEventListener("DOMContentLoaded", main);
