@@ -2,6 +2,9 @@
 
 > brainstorm with llama/anything
 
+The project is under active refactoring and rapid development. Expect breakages and
+un-documented behaviors and stale documentations/guides.
+
 ### Configuration
 
 > run `configure-de.sh` to configure new POSIX systems. Keep on reading to

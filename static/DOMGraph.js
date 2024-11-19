@@ -1,11 +1,11 @@
 // DOM.js handels all the creating and updating of the DOM elements, Nodes and Edges
 console.log("DOMGraph.js");
 
-/**@typedef {{x:number; y:number;}} Position   */
+/**@typedef {{x:number, y:number}} Position   */
 /**@typedef {"targetIsChild"|"targetIsParent"} OrakelNodeTarget */
-/**@typedef {{line: HTMLDivElement; target: OrakelNode; type: OrakelNodeTarget, circle?: HTMLDivElement}} OrakelLine */
-/**@typedef {HTMLDivElement & {lines?: Array<OrakelLine>;}} OrakelNode */
-/**@typedef {{start: Position; length: number; slant: number;}} OrakelLineMeta */
+/**@typedef {{line: HTMLDivElement, target: OrakelNode, type: OrakelNodeTarget, circle?: HTMLDivElement}} OrakelLine */
+/**@typedef {(HTMLDivElement & {lines?: Array<OrakelLine>})} OrakelNode */
+/**@typedef {{start: Position, length: number, slant: number}} OrakelLineMeta */
 
 /**@type {boolean} */
 const CREATE_LINES_FOR_CONTEXT_NODES = false;
@@ -288,7 +288,7 @@ function createLineWithParent(parentNode, childNode, isCreatedByUser = false) {
   parentNode.lines = parentNode.lines || [];
   childNode.lines = childNode.lines || [];
 
-  parentNode.lines.push({
+  parentNode.lines?.push({
     line,
     target: childNode,
     type: "targetIsChild",

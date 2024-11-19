@@ -1,36 +1,38 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
+title: Welcome to Orakel
+description: Get started brainstorming your next big thing
 template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: Get it done. Fast.
   image:
-    file: ../../assets/houston.webp
+    file: ../../assets/orakel-docs.png
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /guides/get-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: Explore the Source
+      link: https://github.com/LeanderZiehm/Orakel
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
-## Next steps
+## What to do Next?
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+<CardGrid>
+  <Card title="Write your thought" icon="pencil">
+    Read the getting-started tutorial to write your thoughts with an LLM
+  </Card>
+  <Card title="Help us document" icon="add-document">
+    We would really like contribution to improve documentation and tutorials
+  </Card>
+  <Card title="Configure Orakel" icon="setting">
+    Read [Configuration Overview](configuration/overview) to know how to start
+    configure your own local instance
+  </Card>
+  <Card title="Tutorials" icon="open-book">
+    Incase anything is ambiguous, just head over to the
+    [Tutorials](tutorials/get-started) section
+  </Card>
 </CardGrid>

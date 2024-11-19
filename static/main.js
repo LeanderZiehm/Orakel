@@ -1,5 +1,5 @@
 /**
- * @typedef {{method: string; headers: Object.<string, string>; body: string;}} RequestOptions
+ * @typedef {({method: string, headers: Object.<string, string>, body: string})} RequestOptions
  * @summary Standardized way to construct body
  */
 
