@@ -3,8 +3,8 @@ console.log("DOMGraph.js");
 
 /**@typedef {{x:number; y:number;}} Position   */
 /**@typedef {"targetIsChild"|"targetIsParent"} OrakelNodeTarget */
-/**@typedef {{line: HTMLDivElement; target: HTMLDivElement; type: OrakelNodeTarget}} OrakelLine */
-/**@typedef {HTMLDivElement & {lines: Array<OrakelLine>;}} OrakelNode */
+/**@typedef {{line: HTMLDivElement; target: OrakelNode; type: OrakelNodeTarget, circle?: HTMLDivElement}} OrakelLine */
+/**@typedef {HTMLDivElement & {lines?: Array<OrakelLine>;}} OrakelNode */
 /**@typedef {{start: Position; length: number; slant: number;}} OrakelLineMeta */
 
 /**@type {boolean} */
@@ -13,6 +13,10 @@ const CREATE_LINES_FOR_CONTEXT_NODES = false;
 /**@type {number} */
 const NODE_OFFSET_Y = 150;
 
+/**
+ * @summary creates an {@link OrakelNode} with attributes for user created nodes
+ * @param {string} text content of the node
+ */
 function createUserNode(text) {
   const referencePosition = getReferencePosition();
   const newNode = getNewNode(text);
@@ -40,10 +44,12 @@ function createUserNode(text) {
 
 /**
  * @function createLLMNodes
- * @param {string} texts text that needs to be made as node's content
+ * @param {Array<string>} texts text that needs to be made as node's content
  */
 function createLLMNodes(texts) {
   const referencePosition = getReferencePosition();
+
+  /**@type {Array<OrakelNode>} */
   const createdNodes = [];
   let combinedLength = 0;
   const PADDING = 0;
@@ -101,7 +107,7 @@ function setNodePosition(node, x, y) {
  * styling depending on who created the node
  * @param {string} text new node's text content
  * @param {boolean} createdByLLM flag to indicate who created the node
- * @returns {OrakelNode}
+ * @returns {OrakelNode|HTMLDivElement}
  *
  * @todo write test
  * @todo refactor param createByLLM
@@ -130,7 +136,13 @@ function getNewNode(text, createdByLLM = false) {
   return newNode;
 }
 
+/**
+ * @summary reconstructs (reset and render anew) context map [on top-left corner]
+ *
+ * @todo write test
+ */
 function reconstructContextList() {
+  // @ts-ignore
   nodeListContainer.innerHTML = ""; // Clear existing items
 
   context.forEach((node) => {
@@ -148,10 +160,16 @@ function reconstructContextList() {
 
     listItem.appendChild(nodeText);
     listItem.appendChild(deleteButton);
+
+    // @ts-ignore
     nodeListContainer.appendChild(listItem);
   });
 }
 
+/**
+ * @summary removes specified node from the context map on top-left corner
+ * @param {OrakelNode} node node that needs to be removed
+ */
 function removeNodeFromMemory(node) {
   context = context.filter((contextNode) => contextNode !== node);
 
@@ -161,6 +179,10 @@ function removeNodeFromMemory(node) {
   reconstructContextList();
 }
 
+/**
+ * @summary toggles a node's contextual-state
+ * @param {OrakelNode} node node whose contextual-state should be toggles
+ */
 function toggleContext(node) {
   if (node.classList.contains("contexted")) {
     removeNodeFromMemory(node);
@@ -171,6 +193,11 @@ function toggleContext(node) {
   reconstructContextList();
 }
 
+/**
+ * @summary appends given `node` to the context map and {@link reconstructContextList}
+ * re-renders the context map
+ * @param {OrakelNode} node node whoch needs to be added to the context map
+ */
 function addToContext(node) {
   node.classList.add("contexted");
   context.push(node);
@@ -231,13 +258,28 @@ function createLine(lineContainer, node1, node2) {
   }
 }
 
+/**
+ * @summary draws line between node and its associated nodes
+ * @description creates (draws) line from given `node` to its associated
+ * notes using cartesian plane trigonometry (2D). Uses the relationship
+ * established previously with the type {@link OrakelLine}
+ *
+ * @param {OrakelNode} node node to which lines are to be drawn
+ *
+ * @todo write test
+ */
 function createLines(node) {
-  // console.log("createLines",node);
-  node.lines.forEach((lineContainer) => {
+  node.lines?.forEach((lineContainer) => {
     createLine(lineContainer, node, lineContainer.target);
   });
 }
 
+/**
+ * @summary creates line from child to parent attaching metadata as well
+ * @param {OrakelNode} parentNode node which will act like a parent
+ * @param {OrakelNode} childNode node which will act like a child
+ * @param {boolean} isCreatedByUser flag to indicate the ownership
+ */
 function createLineWithParent(parentNode, childNode, isCreatedByUser = false) {
   const line = document.createElement("div");
   line.classList.add("line");
@@ -261,18 +303,26 @@ function createLineWithParent(parentNode, childNode, isCreatedByUser = false) {
   createLines(childNode);
 }
 
+/**
+ * @summary draws an arrow at the given position using `base_left` and `base_right`
+ * @param {OrakelLine} line line that needs to have the arrow
+ * @param {number} base_left position of arrow in x axis
+ * @param {number} base_top position of the arrow in y axis
+ */
 function createArrow(line, base_left, base_top) {
   let circle = line.circle || document.createElement("div");
 
-  circle.style.position = "absolute";
+  // stylize the arrow head
   circle.style.width = "10px";
   circle.style.height = "10px";
   circle.style.borderRadius = "50%";
   circle.style.backgroundColor = "transparent";
-  circle.style.zIndex = "100";
-  lineContainer.circle = circle;
+
+  // position of the arrow base
+  circle.style.position = "absolute";
   circle.style.left = `${base_left}px`;
   circle.style.top = `${base_top}px`;
+  circle.style.zIndex = "100";
 
   document.body.appendChild(circle);
 }

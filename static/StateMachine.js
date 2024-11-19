@@ -104,6 +104,8 @@ async function renderState() {
 
   const blobURI = await res.blob();
   const file = window.URL.createObjectURL(blobURI);
+
+  // @ts-ignore
   window.location = file;
 }
 
