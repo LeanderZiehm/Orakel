@@ -13,7 +13,7 @@ const btnSavePNG = document.getElementById("btnSavePNG");
 btnSaveState.addEventListener("click", dumpState);
 btnSavePNG.addEventListener("click", renderState);
 
-/**@type {Array<HTMLDivElement>} */
+/**@type {Array<OrakelNode>} */
 let nodes = []; // The nodes that are currently on the screen
 
 /**@type {Array<OrakelNode>} */
@@ -53,6 +53,13 @@ let state = {
   edges: [],
 };
 
+/**
+ * @summary updates the state of a stale node
+ * @param {OrakelNode} node stale node whose state is stale as well
+ * @returns {void}
+ *
+ * @todo implement later on
+ */
 function updateState(node) {
   /*
             update the state at this point so that the
@@ -66,28 +73,28 @@ function updateState(node) {
           */
   //! refactoring
   return;
-  debug("state: " + JSON.stringify(state, null, 2));
-  const new_node = {
-    id: uid,
-    payload: text,
-    left: left,
-    top: top,
-  };
-  state.nodes.push(new_node);
+  // debug("state: " + JSON.stringify(state, null, 2));
+  // const new_node = {
+  //   id: uid,
+  //   payload: text,
+  //   left: left,
+  //   top: top,
+  // };
+  // state.nodes.push(new_node);
 
-  let parents = context;
+  // let parents = context;
 
-  if (context.length > 0) {
-    let parent_ids = [];
-    for (let i = 0; i < parents.length; i++) {
-      parent_ids.push(parents[i].dataset.nodeId);
-    }
+  // if (context.length > 0) {
+  //   let parent_ids = [];
+  //   for (let i = 0; i < parents.length; i++) {
+  //     parent_ids.push(parents[i].dataset.nodeId);
+  //   }
 
-    state.edges.push({
-      self: uid,
-      parents: parent_ids,
-    });
-  }
+  //   state.edges.push({
+  //     self: uid,
+  //     parents: parent_ids,
+  //   });
+  // }
 }
 
 async function renderState() {
