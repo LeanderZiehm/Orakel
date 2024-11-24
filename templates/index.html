@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORAKEL VON MÄGDESPRUNG</title>
+    <style>
+        /* Styling for a clean and modern look */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .question {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        #chat-box {
+            margin-top: 2rem;
+            border-top: 1px solid #ddd;
+            padding-top: 1rem;
+        }
+        .user-message, .llm-response {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .user-message {
+            background-color: #e0f7fa;
+            color: #005662;
+            text-align: right;
+        }
+        .llm-response {
+            background-color: #dffff7;
+            color: #0d5e4a;
+            text-align: left;
+        }
+        #user-form, #new-chat-form {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #1f0202;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+        #ask-button {
+            background-color: #007bff;
+            color: white;
+        }
+        #new-chat-button {
+            background-color: #f52525;
+            color: white;
+            position: fixed;
+            right: 5%;
+            top: 5%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ORAKEL VON MÄGDESPRUNG</h1>
+    <p class="question">{{ opening_question }}</p>
+
+    <div id="chat-box"></div>
+
+    <form id="user-form">
+        <input type="text" id="user_message" name="user_message" placeholder="Type your question..." required>
+        <button id="ask-button" type="submit">Ask</button>
+    </form>
+
+    <form id="new-chat-form">
+        <button id="new-chat-button" type="button">New Chat</button>
+    </form>
+
+    <script>
+        document.getElementById("user-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const userMessage = document.getElementById("user_message").value;
+            addMessageToChat(userMessage, "user-message");
+
+            fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({ user_message: userMessage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessageToChat(data.response, "llm-response");
+            });
+            document.getElementById("user_message").value = "";
+        });
+
+        // New Chat button clears chat history
+        document.getElementById("new-chat-button").addEventListener("click", function() {
+            fetch("/new_chat", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("chat-box").innerHTML = "";  // Clear chat box on the page
+                    console.log(data.message);
+                });
+        });
+
+        function addMessageToChat(message, className) {
+            const chatBox = document.getElementById("chat-box");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = className;
+            messageDiv.textContent = message;
+            chatBox.appendChild(messageDiv);
+
+            // messageDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+            document.getElementById("user-form").scrollIntoView({ behavior: "smooth", block: "end" });
+ 
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+    "created_at": "2024-11-24T01:01:10.681749",
+    "messages": [
+        {
+            "role": "user",
+            "content": "I don't",
+            "timestamp": "2024-11-24T01:01:10.681749"
+        },
+        {
+            "role": "you",
+            "content": "It looks like you might have started to say something, but didn't finish. Would you like to complete your thought? I'm here to listen and help if I can! What were you going to say? \"I don't...\"",
+            "timestamp": "2024-11-24T01:01:10.681749"
+        }
+    ]
+}
