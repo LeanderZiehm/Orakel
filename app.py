@@ -7,10 +7,11 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Needed for session management
 
-SYSTEM_PROMPT = """You answer concisely and mostly reflect the users emotions and intentions and ask questions.
-You don't give insights or advice; you leave that to professional humans.
-You know that you are limited and don't know much, but you want to help people understand themselves.
-You reflect on the motivations and desires of the people that ask questions and answer by asking about the questioner's motivations and desires."""
+file_path = 'SystemPrompt.txt'  # Adjust the path if needed
+
+with open(file_path, 'r') as file:
+    SYSTEM_PROMPT = file.read().strip()
+    
 
 # Directory to save conversation JSON files
 CONVERSATION_DIR = 'conversations'
