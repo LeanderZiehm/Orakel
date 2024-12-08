@@ -120,15 +120,6 @@ function keydownHandler(event) {
  * @param {PointerEvent} event event object given by the browser
  */
 function pointerdownHandler(event) {
-
-//check if pointer right click
-
-    if (event.button === 2) {
-        debug("right click, stop pointerdownHandler");
-        return;
-    }
-
-
   if (event.target === document.body) {
     if (isHoldingCtrl === false && isHoldingShift === false) {
       activeNodes.forEach((activeNode) =>
@@ -197,7 +188,6 @@ function onDrag(event) {
     clickedBackgroundPosition.x = event.clientX;
     clickedBackgroundPosition.y = event.clientY;
 
-<<<<<<< Updated upstream
     nodes.forEach((node) => {
       const x = node.getBoundingClientRect().left + offsetXBackground;
       const y = node.getBoundingClientRect().top + offsetYBackground;
@@ -237,58 +227,6 @@ function onDrag(event) {
       setNodePosition(child, x, y);
     }
   });
-=======
-        nodes.forEach((node) => {
-            const x = node.getBoundingClientRect().left + offsetXBackground;
-            const y = node.getBoundingClientRect().top + offsetYBackground;
-            setNodePosition(node, x, y);
-        });
-    }
-
-    if (isHoldingCtrl || isHoldingShift) {
-        // because now user wants to resize the window
-        return;
-    }
-
-    if (!isDragging || !draggedNode) {
-        return;
-    }
-
-    let offsetX = event.clientX - startDragPosX;
-    let offsetY = event.clientY - startDragPosY;
-
-    startDragPosX = event.clientX;
-    startDragPosY = event.clientY;
-
-
-
-    for (let i = 0; i < activeNodes.length; i++) {
-        const activeNode = activeNodes[i];
-        const x = activeNode.getBoundingClientRect().left + offsetX;
-        const y = activeNode.getBoundingClientRect().top + offsetY;
-
-        setNodePosition(activeNode, x, y);
-        activeNode.lines.forEach((lineContainer) => {
-            if (
-                !isHoldingAlt &&
-                lineContainer.type == "targetIsChild" &&
-                lineContainer.target.dataset.userNode !== "true"
-            ) {
-                const child = lineContainer.target;
-                const x = child.getBoundingClientRect().left + offsetX;
-                const y = child.getBoundingClientRect().top + offsetY;
-                setNodePosition(child, x, y);
-            }
-        });
-    }
-
-    // const x = draggedNode.getBoundingClientRect().left + offsetX;
-    // const y = draggedNode.getBoundingClientRect().top + offsetY;
-
-    // setNodePosition(draggedNode, x, y);
-
-
->>>>>>> Stashed changes
 }
 
 document.addEventListener("keydown", keydownHandler);
@@ -296,82 +234,3 @@ document.addEventListener("keyup", keyupHandler);
 document.addEventListener("pointerdown", pointerdownHandler);
 document.addEventListener("pointerup", stopDrag);
 document.addEventListener("pointermove", onDrag);
-<<<<<<< Updated upstream
-=======
-
-
-
-
-
-
-function insertCSS() {
-    const cssText = `
-          .selection-box {
-      position: absolute;
-      background-color: rgba(0, 0, 255, 0.2);
-      border: 1px solid blue;
-      pointer-events: none;
-      z-index: 1000;
-    }`;
-    const style = document.createElement("style");
-    style.appendChild(document.createTextNode(cssText));
-    document.head.appendChild(style);
-}
-insertCSS();
-
-
-let startX, startY, selectionBox;
-
-document.addEventListener('contextmenu', (e) => e.preventDefault()); // Prevent right-click menu
-document.addEventListener('mousedown', (e) => {
-
-    // debug("mousedown",e);
-    if (e.button !== 2) return; // Only respond to right-click
-    startX = e.clientX;
-    startY = e.clientY;
-    // Create the selection box element
-    selectionBox = document.createElement('div');
-    selectionBox.classList.add('selection-box');
-    selectionBox.style.left = `${startX}px`;
-    selectionBox.style.top = `${startY}px`;
-    document.body.appendChild(selectionBox);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-});
-function onMouseMove(e) {
-    const currentX = e.clientX;
-    const currentY = e.clientY;
-    // Update selection box dimensions
-    selectionBox.style.width = `${Math.abs(currentX - startX)}px`;
-    selectionBox.style.height = `${Math.abs(currentY - startY)}px`;
-    selectionBox.style.left = `${Math.min(currentX, startX)}px`;
-    selectionBox.style.top = `${Math.min(currentY, startY)}px`;
-}
-function onMouseUp(e) {
-    if (e.button !== 2) return; // Only respond to right-click
-    // Remove the selection box
-
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-    const selectionBoundingBox = selectionBox.getBoundingClientRect();
-    selectionBox.remove();
- 
-    debug(selectionBoundingBox);
-    nodes.forEach(node => {
-        const nodeBoundinBox = node.getBoundingClientRect();
-        if (rectsIntersect(selectionBoundingBox, nodeBoundinBox)) {
-            // box.classList.add('active');
-            multiSelect(node);
-            debug(nodeBoundinBox)
-        }
-    });
-}
-function rectsIntersect(rect1, rect2) {
-    return !(
-        rect1.right < rect2.left ||
-        rect1.left > rect2.right ||
-        rect1.bottom < rect2.top ||
-        rect1.top > rect2.bottom
-    );
-}
->>>>>>> Stashed changes
