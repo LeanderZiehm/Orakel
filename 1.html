@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .box {
+      width: 100px;
+      height: 100px;
+      margin: 10px;
+      background-color: lightgray;
+      display: inline-block;
+    }
+    .active {
+      background-color: lightblue;
+      border: 2px solid blue;
+    }
+    .selection-box {
+      position: absolute;
+      background-color: rgba(0, 0, 255, 0.2);
+      border: 1px solid blue;
+      pointer-events: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="box"></div>
+  <div class="box"></div>
+  <div class="box"></div>
+  <div class="box"></div>
+  <div class="box"></div>
+  <script>
+    let startX, startY, selectionBox;
+    const boxes = document.querySelectorAll('.box');
+    document.addEventListener('contextmenu', (e) => e.preventDefault()); // Prevent right-click menu
+    document.addEventListener('mousedown', (e) => {
+      if (e.button !== 2) return; // Only respond to right-click
+      startX = e.clientX;
+      startY = e.clientY;
+      // Create the selection box element
+      selectionBox = document.createElement('div');
+      selectionBox.classList.add('selection-box');
+      selectionBox.style.left = `${startX}px`;
+      selectionBox.style.top = `${startY}px`;
+      document.body.appendChild(selectionBox);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+    function onMouseMove(e) {
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      // Update selection box dimensions
+      selectionBox.style.width = `${Math.abs(currentX - startX)}px`;
+      selectionBox.style.height = `${Math.abs(currentY - startY)}px`;
+      selectionBox.style.left = `${Math.min(currentX, startX)}px`;
+      selectionBox.style.top = `${Math.min(currentY, startY)}px`;
+    }
+    function onMouseUp(e) {
+      if (e.button !== 2) return; // Only respond to right-click
+      // Remove the selection box
+      selectionBox.remove();
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      const selectionRect = selectionBox.getBoundingClientRect();
+      // Check for intersecting boxes
+      boxes.forEach(box => {
+        const boxRect = box.getBoundingClientRect();
+        if (rectsIntersect(selectionRect, boxRect)) {
+          box.classList.add('active');
+        }
+      });
+    }
+    function rectsIntersect(rect1, rect2) {
+      return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+      );
+    }
+  </script>
+</body>
+</html>

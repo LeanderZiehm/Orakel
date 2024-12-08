@@ -21,6 +21,7 @@ function initDebug() {
  * @todo write test
  */
 function debug(input) {
+<<<<<<< Updated upstream
   const div = document.createElement("div");
 
   // for now, we can't print out HTMLElement to debug,
@@ -45,6 +46,61 @@ function debug(input) {
  */
 function insertCSS() {
   const cssText = `      #debug {
+=======
+    if (typeof input === "string") {
+        debugString(input);
+    } else if (typeof input === "object") {
+        debugObject(input);
+    } else if (typeof input === "array") {
+        debugArray(input);
+    }
+    else {
+        debugString("Unknown type of input");
+    }
+console.log(input);
+}
+
+
+// function debug(input,input2) {
+//     if (typeof input === "string") {
+//         debugString(input);
+//     } else if (typeof input === "object") {
+//         debugObject(input);
+//     } else if (typeof input === "array") {
+//         debugArray(input);
+//     }
+//     else {
+//         debugString("Unknown type of input");
+//     }
+//     if (typeof input2 === "string") {
+//         debugString(input2);
+//     } else if (typeof input2 === "object") {
+//         debugObject(input2);
+//     } else if (typeof input2 === "array") {
+//         debugArray(input2);
+//     }
+//     else {
+//         debugString("Unknown type of input");
+//     }
+
+//     console.log(input,input2);
+// }
+
+
+//add a funtion that can take an object and print it in a readable way
+function debugObject(obj){
+    debug(JSON.stringify(obj, null, 2));
+}
+
+function debugArray(arr){
+    debug(JSON.stringify(arr, null, 2));
+}
+
+
+
+function insertCSS(){
+    const cssText = `      #debug {
+>>>>>>> Stashed changes
         position: absolute;
         top: 0px;
         right: 0px;
